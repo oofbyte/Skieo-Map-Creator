@@ -1,0 +1,28 @@
+Ski-E-O Map Creator -- third-party software and data
+=====================================================
+
+This is a fan-made tool. It is not affiliated with or endorsed by the developers of Ski-E-O!.
+No game files are included: the creator reads the files it needs from your own installed copy of the game.
+
+Software
+--------
+* Leaflet 1.9.4 (BSD 2-Clause) -- https://leafletjs.com -- web/vendor/leaflet/LICENSE
+* three.js r160 with OrbitControls (MIT) -- https://threejs.org -- web/vendor/three/LICENSE
+* retoc (MIT) -- https://github.com/trumank/retoc -- tools/retoc-LICENSE
+  retoc downloads the Oodle compression library on first use.
+* pywebview (BSD 3-Clause), pythonnet (MIT), NumPy (BSD 3-Clause), Pillow (MIT-CMU), tifffile (BSD 3-Clause), Python (PSF)
+* Microsoft Edge WebView2 Runtime (installed on Windows; not included)
+
+Fonts (SIL Open Font License 1.1, see web/fonts/*-OFL.txt)
+-----------------------------------------------------------
+* Caprasimo -- The Caprasimo Project Authors
+* Lexend -- The Lexend Project Authors
+* Roboto Condensed -- The Roboto Project Authors
+
+Map and elevation data (downloaded while you use the app)
+---------------------------------------------------------
+* Map data (c) OpenStreetMap contributors, ODbL -- https://www.openstreetmap.org/copyright
+* Map style (c) OpenTopoMap, CC-BY-SA -- https://opentopomap.org
+* Place search: Photon by komoot (OpenStreetMap data) and Nominatim (OpenStreetMap Foundation)
+* Elevation inside the USA: USGS 3D Elevation Program (public domain)
+* Elevation elsewhere: Terrain Tiles on AWS Open Data (Mapzen; sources include SRTM, GMTED2010, ETOPO1, 3DEP and others)

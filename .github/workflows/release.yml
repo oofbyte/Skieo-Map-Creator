@@ -1,0 +1,96 @@
+# Builds SkiEO-Map-Creator.exe on GitHub's servers from a release's tag and attaches it to that release, with its
+# SHA-256 and a signed build provenance attestation (check it with: gh attestation verify <exe> --repo <owner>/<repo>).
+# To release: bump VERSION in skieo_creator/__init__.py and packaging/version_info.txt and add a CHANGELOG.md section,
+# then on GitHub: Releases -> Draft a new release -> new tag vX.Y.Z -> Publish (the description can stay empty; it is
+# filled from CHANGELOG.md). Or from a terminal: gh release create vX.Y.Z --title vX.Y.Z --notes ""
+# Run by hand (Actions tab -> Release -> Run workflow) to test a build without releasing; the exe is then kept as a
+# workflow artifact.
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+env:
+  TAG: ${{ github.event.release.tag_name }}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Check the version matches the tag
+        if: github.event_name == 'release'
+        shell: python
+        run: |
+          import os, re
+          tag = os.environ['TAG'].lstrip('v')
+          app = re.search(r"VERSION = '([^']+)'", open('skieo_creator/__init__.py').read()).group(1)
+          info = re.search(r"'FileVersion', '([^']+)'", open('packaging/version_info.txt').read()).group(1)
+          assert tag == app == info, f'tag {tag}, skieo_creator VERSION {app}, version_info {info}'
+          log = open('CHANGELOG.md', encoding='utf-8').read()
+          assert re.search(rf'^## v{re.escape(tag)}\b', log, re.M), f'CHANGELOG.md has no "## v{tag}" section'
+
+      - name: Build the exe
+        run: |
+          python packaging/make_icon.py
+          python -m PyInstaller --noconfirm --clean --distpath dist --workpath build packaging/SkiEO-Map-Creator.spec
+
+      - name: Check the exe against the source
+        run: python packaging/verify_exe.py dist/SkiEO-Map-Creator.exe
+
+      - name: SHA-256 and release notes
+        shell: python
+        run: |
+          import hashlib, os, re
+          h = hashlib.sha256(open('dist/SkiEO-Map-Creator.exe', 'rb').read()).hexdigest()
+          open('dist/SHA256SUMS.txt', 'w', newline='\n').write(f'{h}  SkiEO-Map-Creator.exe\n')
+          tag = os.environ.get('TAG', '')
+          log = open('CHANGELOG.md', encoding='utf-8').read()
+          m = re.search(rf'^## {re.escape(tag)}\b.*?\n(.*?)(?=^## |\Z)', log, re.S | re.M) if tag else None
+          run = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          notes = (m.group(1).strip() + '\n\n' if m else '') + (
+              '### Download\n**SkiEO-Map-Creator.exe**: one file, no install. Windows may warn because it is unsigned: '
+              'More info, then Run anyway.\n\n'
+              f'### Verify\nSHA-256: `{h}`\n\n'
+              f'Built by GitHub Actions from this tag ([build log]({run})). Check the build attestation:\n'
+              '```\ngh attestation verify SkiEO-Map-Creator.exe --repo ${{ github.repository }}\n```\n'
+              'Or compare the exe with the source yourself with `packaging/verify_exe.py` (see the README).\n')
+          open('dist/notes.md', 'w', encoding='utf-8').write(notes)
+          print(notes)
+
+      - uses: actions/attest@v4
+        with:
+          subject-path: dist/SkiEO-Map-Creator.exe
+
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$env:TAG" dist/SkiEO-Map-Creator.exe dist/SHA256SUMS.txt --clobber --repo "${{ github.repository }}"
+          gh release edit "$env:TAG" --notes-file dist/notes.md --title "Ski-E-O Map Creator $env:TAG" --repo "${{ github.repository }}"
+
+      - name: Keep the test build
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v7
+        with:
+          name: SkiEO-Map-Creator
+          path: |
+            dist/SkiEO-Map-Creator.exe
+            dist/SHA256SUMS.txt

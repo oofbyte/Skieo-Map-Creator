@@ -1,0 +1,5 @@
+pywebview==6.2.1
+numpy==2.5.4
+pillow==13.0.0
+tifffile==2026.10.15
+pyinstaller==6.22.3

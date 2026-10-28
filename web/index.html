@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ski-E-O Map Creator</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-mountain" viewBox="0 0 32 32"><path d="M3 26 L12 11 L17 18 L21 13 L29 26 Z"/><path d="M12 11 L14.6 15.2 L12.8 14.4 L11.2 16 L10 14.1"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 32 32"><path d="M8 28 V5"/><path d="M8 6 C12 4 15 8 19 6 C22 4.6 24 5 25 6 V16 C24 15 22 14.6 19 16 C15 18 12 14 8 16"/></symbol>
+  <symbol id="i-skier" viewBox="0 0 32 32"><circle cx="20" cy="6.5" r="2.6"/><path d="M5 25 L27 29"/><path d="M10 13 L16 10.5 L19.5 14 L16 19 L21 23"/><path d="M16 10.5 L13 17 L8 20"/><path d="M19.5 14 L24 15"/></symbol>
+  <symbol id="i-search" viewBox="0 0 32 32"><circle cx="14" cy="14" r="8.5"/><path d="M20.5 20.5 L27 27"/></symbol>
+</svg>
+
+<div id="app">
+  <div id="map" aria-label="Map"></div>
+  <div id="mapHud">
+    <div class="hud-group" role="group" aria-label="Map style">
+      <button class="hud-btn" data-layer="topo" title="Topographic map with contour lines">Topo</button>
+      <button class="hud-btn" data-layer="osm" title="OpenStreetMap standard map">Streets</button>
+    </div>
+    <button class="hud-btn solo" id="overlayBtn" title="Show the loaded terrain on the map" disabled>Terrain overlay</button>
+  </div>
+  <div id="mapHint" class="hud-pill">Drag the square to move it, or click anywhere to put it there</div>
+
+  <aside id="panel">
+    <div class="post" aria-hidden="true"></div>
+    <div class="panel-in">
+      <div class="sign">
+        <svg class="snowcap" viewBox="0 0 300 26" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 26 C6 9 18 7 28 13 C36 2 54 2 62 12 C70 4 88 5 96 14 C106 3 126 3 134 13 C142 6 160 6 168 15 C178 4 198 3 206 13 C214 5 232 5 240 14 C250 4 270 4 278 13 C286 8 296 10 300 18 L300 26 Z" fill="#f4f8fb"/>
+          <path d="M0 26 C6 20 20 19 28 22 C40 18 52 19 62 22 C74 18 86 19 96 23 C108 18 124 18 134 22 C146 19 158 19 168 23 C180 18 196 18 206 22 C218 19 230 19 240 23 C252 18 268 18 278 22 C288 20 296 21 300 24 L300 26 Z" fill="#cfe1ee"/>
+        </svg>
+        <div class="sign-title">Map Creator</div>
+        <div class="sign-sub">turn any mountain into a Ski-E-O! map</div>
+      </div>
+
+      <div class="paper">
+        <div class="paper-top">
+          <nav class="tabs" role="tablist">
+            <button class="tag-tab active" data-tab="create" role="tab">Create</button>
+            <button class="tag-tab" data-tab="maps" role="tab">My Maps<span class="count" id="mapCount"></span></button>
+          </nav>
+          <button id="gamePill" class="status" title="Game status"><i></i><span>Looking for Ski-E-O...</span></button>
+        </div>
+        <div class="rule"></div>
+
+        <div id="banner" class="banner hidden"></div>
+
+        <section id="tab-create" class="scroll">
+          <div class="search">
+            <input id="q" type="search" placeholder="Search a mountain, ski area or town" autocomplete="off" spellcheck="false">
+            <button id="qBtn" class="search-btn" title="Search" aria-label="Search"><svg><use href="#i-search"/></svg></button>
+            <div id="results" class="results hidden" role="listbox"></div>
+          </div>
+
+          <div class="sect" id="cardArea">
+            <div class="sect-h"><span class="num">1</span><h2>Choose the area</h2></div>
+            <p class="note">Fit the mountain inside the square: the summit, and some flat ground at the bottom for the base lodge.</p>
+            <div class="row-label"><label for="size">Area size</label><span class="numval"><input class="num-in" id="sizeOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Area size in km" title="Type a value, then press Enter"><span class="num-unit" id="sizeUnit"></span></span></div>
+            <input type="range" id="size" min="3" max="12" step="0.1" value="8">
+            <div class="meta" id="areaMeta"></div>
+            <button class="menu-bar blue" id="loadBtn"><span class="tile"><svg><use href="#i-mountain"/></svg></span><span class="lbl">Load Terrain</span><span class="chev">&rsaquo;</span></button>
+          </div>
+
+          <div class="sect locked" id="cardTerrain">
+            <div class="sect-h"><span class="num">2</span><h2>Terrain</h2><span class="chip" id="srcTag"></span></div>
+            <div class="photo" id="photo" title="Explore in 3D"><img id="diorama" alt="Terrain preview"><div class="photo-empty" id="dioEmpty">Load the terrain to see it here</div>
+              <div class="photo-badge hidden" id="photoBadge"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Explore in 3D</div></div>
+            <div class="stats" id="stats"></div>
+            <div id="warnings"></div>
+          </div>
+
+          <div class="sect locked" id="cardSettings">
+            <div class="sect-h"><span class="num">3</span><h2>Your resort</h2></div>
+            <label class="field">Name<input id="name" maxlength="40" placeholder="e.g. Mount Hood Meadows" spellcheck="false"></label>
+            <div class="field-err hidden" id="nameErr"></div>
+            <div class="meta hidden" id="nameHint">Names can use letters A–Z, numbers, spaces and - ' . &amp; ( ) — accents are turned into plain letters.</div>
+            <label class="field">Biome<select id="biome"></select></label>
+            <div class="meta" id="biomeHint"></div>
+            <div class="row-label"><label for="treeline">Treeline</label><span><span class="numval"><input class="num-in" id="tlOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Treeline" title="Type a value, then press Enter"><span class="num-unit" id="tlUnit"></span></span> <button class="link" id="tlAuto">auto</button></span></div>
+            <input type="range" id="treeline" min="0" max="4500" step="any">
+            <div class="row-label"><label for="snow">Snowfall</label><span class="numval"><input class="num-in" id="snowOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Snowfall multiplier" title="Type a value, then press Enter"><span class="num-unit" id="snowUnit"></span></span></div>
+            <input type="range" id="snow" min="0.2" max="2.5" step="0.01" value="1">
+            <div class="row-label"><label for="slope">Trees up to</label><span class="numval"><input class="num-in" id="slopeOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Steepest slope with trees" title="Type a value, then press Enter"><span class="num-unit" id="slopeUnit"></span></span></div>
+            <input type="range" id="slope" min="20" max="55" step="1" value="33">
+            <div class="meta">The steepest ground that still gets trees. The game shows bare rock from about 33°.</div>
+            <div class="row-label"><label for="trees">Max trees</label><span class="numval"><input class="num-in" id="treesOut" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Max trees" title="Type a value, then press Enter"><span class="num-unit" id="treesUnit"></span></span></div>
+            <input type="range" id="trees" min="25000" max="1000000" step="1000" value="250000">
+            <div class="meta">The game's own maps have about 200,000–250,000 trees. More look fuller but lower the frame rate on slower PCs.</div>
+            <details>
+              <summary>More options</summary>
+              <div class="row-label"><label for="valley">No trees on flat valley floor below</label><span class="numval"><input class="num-in" id="valOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="No trees on flat valley floor below" title="Type a value, then press Enter"><span class="num-unit" id="valUnit"></span></span></div>
+              <input type="range" id="valley" min="0" max="4000" step="any" value="0">
+            </details>
+          </div>
+
+          <button class="menu-bar green big" id="createBtn" disabled><span class="tile"><svg><use href="#i-flag"/></svg></span><span class="lbl">Create Map</span><span class="chev">&rsaquo;</span></button>
+
+          <div id="jobBox" class="job hidden" aria-live="polite">
+            <div class="job-top"><span class="spinner"></span><span id="jobText"></span></div>
+            <div class="bar"><div id="jobBar"></div></div>
+            <button class="gbtn salmon" id="cancelBtn">Cancel</button>
+          </div>
+
+          <div id="doneBox" class="done hidden">
+            <div class="done-h">Map installed!</div>
+            <img id="doneImg" alt="">
+            <h3 id="doneTitle"></h3>
+            <p id="doneText"></p>
+            <div class="btn-row">
+              <button class="gbtn green" id="playBtn">Play Ski-E-O</button>
+            </div>
+            <div class="done-warn"><b>Heads up:</b> Ski-E-O usually crashes the first time it starts after a new map is installed.
+              That's expected. Just start the game again and it will load normally.</div>
+            <button class="link" id="againBtn">Create another map</button>
+          </div>
+        </section>
+
+        <section id="tab-maps" class="scroll hidden">
+          <div id="mapsEmpty" class="empty">Maps you create appear here. You can reinstall, rebuild or remove them any time.</div>
+          <div id="mapsList"></div>
+        </section>
+
+        <footer>
+          <div class="foot-links">
+            <button class="link" id="unitsBtn"></button>
+            <button class="link" id="repairBtn" title="Rebuild the game's map list from the installed maps">Repair map list</button>
+            <button class="link" id="diagBtn" title="Copy the app log to the clipboard, to share when asking for help">Copy diagnostics</button>
+            <span class="ver" id="ver"></span>
+          </div>
+          <div class="attrib">Map data &copy; <button class="link" data-link="osm">OpenStreetMap</button> contributors,
+            style <button class="link" data-link="otm">OpenTopoMap</button> (CC-BY-SA) &middot; Search
+            <button class="link" data-link="photon">Photon</button>, <button class="link" data-link="nominatim">Nominatim</button> &middot; Elevation <button class="link" data-link="usgs">USGS 3DEP</button>,
+            <button class="link" data-link="terrain">Terrain Tiles</button> &middot; <button class="link" data-link="leaflet">Leaflet</button></div>
+        </footer>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div id="v3d" class="v3d hidden" aria-label="3D terrain view">
+  <canvas id="v3dCanvas"></canvas>
+  <div class="v3d-head"><div class="tag-title">3D Terrain</div><div class="v3d-name"><b id="v3dTitle"></b><span id="v3dInfo"></span></div></div>
+  <div class="v3d-bar">
+    <div class="hud-group" role="group" aria-label="Surface">
+      <button class="hud-btn" data-tex="terrain" title="Forest, rock and snow from the elevation">Terrain</button>
+      <button class="hud-btn" data-tex="topo" title="Drape the topo map over the terrain">Topo map</button>
+    </div>
+    <label class="hud-pill v3d-exag">Height <input type="range" id="v3dExag" min="1" max="3" step="0.1" value="1.5"><output id="v3dExagOut"></output></label>
+    <button class="hud-btn solo" id="v3dReset">Reset view</button>
+    <button class="gbtn crimson" id="v3dClose" title="Close (Esc)">Close</button>
+  </div>
+  <div class="v3d-compass-wrap" title="North"><div class="v3d-compass" id="v3dCompass"><span>N</span></div></div>
+  <div class="v3d-help hud-pill">Left-drag to rotate &middot; right-drag to move &middot; scroll to zoom &middot; Esc to close</div>
+  <div class="v3d-label base hidden" id="v3dBaseLbl">Base area</div>
+  <div class="v3d-label hidden" id="v3dPeakLbl"></div>
+  <div class="v3d-loading hidden" id="v3dLoading"><div class="v3d-loading-pill"><span class="spinner"></span><span id="v3dLoadingText"></span></div></div>
+</div>
+
+<div id="toast" class="toast hidden" role="status"></div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-box"><div class="tag-title" id="modalTitle"></div><div class="rule"></div><p id="modalText"></p>
+    <div class="btn-row end"><button class="gbtn salmon" id="modalNo">Cancel</button><button class="gbtn green" id="modalYes">OK</button></div></div>
+</div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="app.js"></script>
+<script type="module" src="viewer3d.js"></script>
+</body>
+</html>
