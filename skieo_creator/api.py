@@ -363,6 +363,8 @@ class Api:
             raise UserError('Unknown mod.')
         if install.game_running():
             raise UserError('Close Ski-E-O first, then try again.')
+        if on and next(m for m in modlib.status(st['folder'])['mods'] if m['id'] == mod_id)['included']:
+            raise UserError('Your own lift mod (ZZZ_LiftMod_P) already has this lift. Installing it twice would clash.')
         log.info('mod %s -> %s', mod_id, 'on' if on else 'off')
         return dict(found=True, running=False, **modlib.set_mod(st['folder'], mod_id, bool(on)))
 

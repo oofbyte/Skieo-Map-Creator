@@ -664,16 +664,24 @@ async function mapAction(slug, a) {
 /* ------------------------------------------------------------ mod library */
 function renderMods(r) {
   if (!r.found) { $('modsList').innerHTML = '<div class="empty">Ski-E-O was not found.</div>'; return; }
-  $('modsList').innerHTML = r.mods.map((m) => `<div class="mrow" data-mod="${esc(m.id)}">
+  $('modsList').innerHTML = r.mods.map((m) => {
+    const note = m.included ? 'Already in your own lift mod'
+      : m.on ? (m.key ? `On: press ${esc(m.key)} in game` : 'On: in the build menu') : 'Off';
+    return `<div class="mrow" data-mod="${esc(m.id)}">
       <div class="mi"><h4>${esc(m.name)}</h4>
         <div class="sub">${esc(m.about)}</div>
-        ${m.on ? `<span class="badge">On: press ${esc(m.key)} in game</span>` : '<span class="badge off">Off</span>'}
-        <div class="mact"><button class="link" data-on="${m.on ? 0 : 1}">${m.on ? 'Switch off' : 'Switch on'}</button></div>
-      </div></div>`).join('');
-  $('modsList').querySelectorAll('[data-on]').forEach((b) => {
-    b.onclick = async () => {
-      const res = await call('set_mod', b.closest('.mrow').dataset.mod, b.dataset.on === '1');
-      if (!res.ok) return errorBox(res.error);
+        <span class="badge${m.on ? '' : ' off'}">${note}</span></div>
+      <label class="switch" title="${m.on ? 'Switch off' : 'Switch on'}">
+        <input type="checkbox" ${m.on ? 'checked' : ''} ${m.included ? 'disabled' : ''} aria-label="${esc(m.name)}">
+        <span class="knob"></span></label></div>`;
+  }).join('');
+  $('modsList').querySelectorAll('.switch input').forEach((sw) => {
+    sw.onchange = async () => {
+      const row = sw.closest('.mrow');
+      document.querySelectorAll('#modsList .switch input').forEach((x) => { x.disabled = true; });
+      row.querySelector('.badge').textContent = sw.checked ? 'Installing...' : 'Removing...';
+      const res = await call('set_mod', row.dataset.mod, sw.checked);
+      if (!res.ok) { errorBox(res.error); return loadMods(); }
       renderMods(res);
     };
   });
