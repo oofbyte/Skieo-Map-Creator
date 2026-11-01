@@ -20,6 +20,7 @@ permissions:
 
 env:
   TAG: ${{ github.event.release.tag_name }}
+  PYTHONUTF8: '1'      # Windows runners print in cp1252 otherwise: the notes step failed on a ″ in the changelog
 
 jobs:
   build:
