@@ -415,7 +415,7 @@ def preview_assets(gd, img):
     return lh.set_export_size(ua, len(ue)), ue
 
 
-def initial_save(gd, fr, terrain_gen, base_row, base_col, base_h, mappath, new_key):
+def initial_save(gd, fr, terrain_gen, base_row, base_col, base_h, mappath, new_key, native_resort=None):
     """starting save: Sugar Bowl tutorial save with this map's path, terrain seed and world bounds, the ticket office /
     camera / cleared zones moved to the base area"""
     src = gd['is_ue']
@@ -459,6 +459,8 @@ def initial_save(gd, fr, terrain_gen, base_row, base_col, base_h, mappath, new_k
     raw[k:k + 4 + len(IS_KEY_OLD) + 1] = nk
     gv[d:d + size] = raw
     struct.pack_into('<i', gv, so, size + len(new_key) - len(IS_KEY_OLD))
+    if native_resort is not None:
+        gv = native_resort.apply(bytes(gv))
     return src[:2] + struct.pack('<i', len(gv)) + bytes(gv) + trailer
 
 
@@ -491,25 +493,25 @@ def typed(stats):
     return [[k, 'f' if isinstance(v, float) else 'i', v] for k, v in stats.items()]
 
 
-def entry_spec(names, display, biome, stats):
+def entry_spec(names, display, biome, stats, native_resort=None):
     prev = 'DA_MapPreview_' + names.mapn
     return {'append': TEMPLATE_KEY,
             'add_names': [names.p_map, names.mapn, names.p_pre, prev, names.p_is, names.is_new],
             'initial_save': {'package': names.p_is, 'object': names.is_new},
             'set': [['Map', 'ref', names.p_map, names.mapn], ['MapPreview', 'ref', names.p_pre, prev],
-                    ['TutorialInitialSave', 'initial_save'], ['bIsTutorialMap', 'hex', '01'], ['bLocked', 'remove'],
+                    ['TutorialInitialSave', 'initial_save'], ['bIsTutorialMap', 'hex', '00' if native_resort is not None else '01'], ['bLocked', 'remove'],
                     ['DisplayName', 'text', display], ['BiomeSettings', 'import', 'DA_BiomeSettings_' + biome]]
-            + typed(stats)}
+            + ([['InitialSave', 'initial_save']] if native_resort is not None else []) + typed(stats)}
 
 
-def build(spec, dem, game, out_dir, cancel, progress):
+def build(spec, dem, game, out_dir, cancel, progress, native_resort=None):
     """spec: dict(name, slug, lat, lon, size_m, biome, treeline, valley, snow, acres, base_rc, seed, tg)
     game: GameData. Returns dict(files=[...], manifest=..., preview=PIL image, stats=...)"""
     with BUILD_LOCK:
-        return _build(spec, dem, game, Path(out_dir), cancel, progress)
+        return _build(spec, dem, game, Path(out_dir), cancel, progress, native_resort)
 
 
-def _build(spec, dem, game, out_dir, cancel, progress):
+def _build(spec, dem, game, out_dir, cancel, progress, native_resort=None):
     t0 = time.time()
     names = Names(spec['slug'])
     gd = game.files()
@@ -530,6 +532,9 @@ def _build(spec, dem, game, out_dir, cancel, progress):
         H, fr.hmin, fr.sp, fr.sc, spec['biome'], spec['treeline'], spec['valley'], donors, game.species(),
         game.biome_species(spec['biome']), spec['seed'], max_trees=int(spec.get('max_trees', trees.DEFAULT_TREES)),
         tree_slope=float(spec.get('tree_slope', trees.TREE_SLOPE)), treeline_fade=float(spec.get('treeline_fade', 0.0)))
+    if native_resort is not None:
+        from .osm.native_save import clear_forest
+        recs, counts = clear_forest(recs, table, fr.half, native_resort)
     obs_ua, obs_ue = obstacles_assets(gd, recs, table, hdr_tail, fr)
     obs_ua = names.rename(obs_ua, 'obs', '/Game/Generated/DA_BakedObstacles_' + DONOR_MAP, names.p_obs)
     cancel.check()
@@ -545,7 +550,7 @@ def _build(spec, dem, game, out_dir, cancel, progress):
     cancel.check()
 
     progress(0.25, 'Starting save...')
-    is_ue = initial_save(gd, fr, spec['tg'], row, col, base_h, names.p_map, names.mapn.encode())
+    is_ue = initial_save(gd, fr, spec['tg'], row, col, base_h, names.p_map, names.mapn.encode(), native_resort)
     is_ua = names.rename(lh.set_export_size(gd['is_ua'], len(is_ue)), 'is', '/Game/InitialSaves/' + IS_OLD, names.p_is)
 
     shell = {}
@@ -596,6 +601,6 @@ def _build(spec, dem, game, out_dir, cancel, progress):
     log.info('built %s (%s) in %.1f s: peak %d ft, vertical %d ft, %d trees', spec['name'], names.slug, time.time() - t0,
              peak_ft, vert_ft, len(recs) // trees.STRIDE)
     progress(1.0, 'Map built')
-    return dict(files=produced, entry=entry_spec(names, spec['name'], spec['biome'], stats), preview=img,
+    return dict(files=produced, entry=entry_spec(names, spec['name'], spec['biome'], stats, native_resort), preview=img,
                 stats=dict(peak_ft=peak_ft, vert_ft=vert_ft, base_ft=int(round(base_m * 3.28084)),
                            trees=len(recs) // trees.STRIDE, species=counts, base_rc=[row, col], snow_piles=bool(shell)))

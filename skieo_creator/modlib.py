@@ -87,6 +87,9 @@ def _set_lua(game_folder, m, on):
     b = _bin(game_folder)
     if on:
         if not (b / 'dwmapi.dll').is_file():
+            if (b / 'ue4ss' / 'UE4SS.dll').exists() or (b / 'UE4SS.dll').exists():
+                raise ValueError('An existing UE4SS installation has no expected dwmapi.dll proxy; '
+                                 'restore its loader before enabling Weather Controls. Existing files were preserved.')
             src = paths.resource('data', 'ue4ss')
             shutil.copytree(src / 'ue4ss', b / 'ue4ss', dirs_exist_ok=True)
             (b / 'ue4ss' / MARKER).write_text('UE4SS was installed by Ski-E-O Map Creator and is removed when its last '
@@ -98,7 +101,9 @@ def _set_lua(game_folder, m, on):
     else:
         _set_line(b, m['folder'], False)
         shutil.rmtree(b / 'ue4ss' / 'Mods' / m['folder'], ignore_errors=True)
-        if (b / 'ue4ss' / MARKER).is_file() and not any(_lua_on(b, x['folder']) for x in MODS.values() if x['kind'] == 'lua'):
+        remaining = b / 'ue4ss' / 'Mods'
+        other_content = remaining.is_dir() and any(p.name != 'mods.txt' for p in remaining.iterdir())
+        if (b / 'ue4ss' / MARKER).is_file() and not other_content and not any(_lua_on(b, x['folder']) for x in MODS.values() if x['kind'] == 'lua'):
             (b / 'dwmapi.dll').unlink(missing_ok=True)      # UE4SS no longer loads; then remove what we installed
             shutil.rmtree(b / 'ue4ss', ignore_errors=True)
 

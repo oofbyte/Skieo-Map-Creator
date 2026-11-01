@@ -1,6 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 # build: packaging\build.bat   (one-file exe in dist\)
 from pathlib import Path
+import sys
+from PyInstaller.utils.hooks import copy_metadata
+SDK_SHARE = Path(sys.prefix) / "share" / "skieomod"
+assert SDK_SHARE.is_dir(), "Install pinned skieo-custom-map requirements first"
 
 ROOT = Path(SPECPATH).parent
 
@@ -8,8 +12,11 @@ a = Analysis(
     [str(ROOT / 'run.py')],
     pathex=[str(ROOT)],
     binaries=[(str(ROOT / 'tools' / 'retoc.exe'), 'tools')],
-    datas=[(str(ROOT / 'web'), 'web'), (str(ROOT / 'data'), 'data'), (str(ROOT / 'tools' / 'retoc-LICENSE'), 'tools'),
-           (str(ROOT / 'packaging' / 'THIRD-PARTY.txt'), '.')],
+    datas=copy_metadata('skieo-custom-map') + [(str(SDK_SHARE), 'share/skieomod')] + [(str(ROOT / 'web'), 'web'), (str(ROOT / 'data'), 'data'), (str(ROOT / 'tools' / 'retoc-LICENSE'), 'tools'),
+           (str(ROOT / 'packaging' / 'THIRD-PARTY.txt'), '.'),
+           # Public source files are read for OSM build provenance in the frozen app.
+           (str(ROOT / 'skieo_creator' / 'builder.py'), 'skieo_creator'),
+           (str(ROOT / 'skieo_creator' / 'geo.py'), 'skieo_creator')],
     hiddenimports=['webview.platforms.edgechromium', 'webview.platforms.winforms', 'clr_loader', 'pythonnet'],
     hookspath=[],
     hooksconfig={},

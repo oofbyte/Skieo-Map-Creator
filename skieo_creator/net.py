@@ -3,6 +3,7 @@ import http.client
 import logging
 import socket
 import ssl
+import sys
 import threading
 import time
 import urllib.error
@@ -22,7 +23,10 @@ class Cancelled(Exception):
 
 
 class NetError(Exception):
-    pass
+    def __init__(self, message, *, category='network', status=None):
+        super().__init__(message)
+        self.category = category
+        self.status = status
 
 
 class CancelToken:
@@ -64,7 +68,21 @@ class _HTTPStatus(Exception):
 
 _pools = {}
 _pool_lock = threading.Lock()
-_ssl = ssl.create_default_context()
+def _ssl_context():
+    # Same local-context approach as official SkiEO Mod 1.29.0 skieo_http:
+    # Windows CryptoAPI can repair incomplete chains; do not inject SSL globally.
+    if sys.platform == 'win32':
+        try:
+            import truststore
+        except ImportError:
+            log.warning('Native Windows HTTPS validation unavailable: install the pinned requirements. '
+                        'Using verified OpenSSL validation until then.')
+        else:
+            return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    return ssl.create_default_context()
+
+
+_ssl = _ssl_context()
 
 
 def _pooled(parts, headers, timeout, cancel):
@@ -113,6 +131,7 @@ def get(url, timeout=60, retries=4, cancel=NEVER, accept=None, per_host=4, not_f
     headers = {'User-Agent': USER_AGENT, 'Accept': accept or '*/*', 'Accept-Encoding': 'identity'}
     direct = parts.scheme == 'https' and not urllib.request.getproxies()
     last = None
+    category, status = 'network', None
     for attempt in range(retries + 1):
         cancel.check()
         try:
@@ -120,7 +139,7 @@ def get(url, timeout=60, retries=4, cancel=NEVER, accept=None, per_host=4, not_f
                 cancel.check()                    # may have waited for the slot a while
                 if direct:
                     return _pooled(parts, headers, timeout, cancel)
-                with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout) as r:
+                with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout, context=_ssl) as r:
                     chunks = []
                     while True:
                         cancel.check()
@@ -134,15 +153,29 @@ def get(url, timeout=60, retries=4, cancel=NEVER, accept=None, per_host=4, not_f
         except (urllib.error.HTTPError, _HTTPStatus) as e:
             if e.code == 404 and not_found_ok:
                 return None
+            category, status = 'server', e.code
             last = 'the server answered %d %s' % (e.code, e.reason)
             if e.code in (400, 401, 403, 404, 410):
                 break
         except (urllib.error.URLError, socket.timeout, ConnectionError, OSError, http.client.HTTPException) as e:
-            last = str(getattr(e, 'reason', e) or type(e).__name__)
+            reason = getattr(e, 'reason', e)
+            if isinstance(reason, ssl.SSLCertVerificationError):
+                category, status = 'tls', None
+                last = str(getattr(reason, 'verify_message', None) or reason)
+                log.warning('HTTPS certificate verification failed (%s): %s', host, last)
+                break
+            category, status = ('timeout' if isinstance(reason, TimeoutError) else 'network'), None
+            last = str(reason or type(e).__name__)
         log.warning('download failed (%s), attempt %d: %s', host, attempt + 1, last)
         if attempt < retries:
             cancel.sleep(min(2 ** attempt, 20))
-    raise NetError('Could not download from %s (%s). Check your internet connection and try again.' % (host, last))
+    if category == 'tls':
+        message = 'HTTPS certificate verification failed for %s (%s).' % (host, last)
+    elif category == 'server':
+        message = 'Could not download from %s (%s). The remote service could not complete the request.' % (host, last)
+    else:
+        message = 'Could not download from %s (%s). Check your internet connection and try again.' % (host, last)
+    raise NetError(message, category=category, status=status)
 
 
 class RateLimit:

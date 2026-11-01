@@ -2,6 +2,14 @@
 
 Maps made with an older version show **Rebuild recommended** in My Maps: one click on Rebuild gives them the fixes.
 
+## Unreleased
+
+- Add **Import lifts** and **Import trails** controls for optional OpenStreetMap
+  objects in newly created resorts, with source hashes and coverage reports.
+- Install a companion for native lift geometry preparation after terrain readiness;
+  preserve other UE4SS mods when toggling Weather Controls.
+- Improve OSM download failover, caching and Windows certificate validation.
+
 ## v1.3.0
 - **Millions of trees**: the game normally shows no trees at all on a map with more than 1.5 million. The creator now
   raises that limit for you: it changes that one number in `skieogame.exe` when it starts and before it installs a

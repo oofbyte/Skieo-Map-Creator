@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "game_build": "26188119",
+  "executable_sha256": "89e207dfc37b94be6f439e4590f4140b711a369bb1e85bb7d14212b06d98e567",
+  "verification": "Read-only static inspection of the installed executable, with reflected native method names; no patches or game execution",
+  "behavior": "LiftActor.LoadFromSaveData calls the native GenerateTowers implementation when Waypoints has at least two entries, the geometry component exists and the saved Towers array is empty",
+  "waypoints_minimum": 2,
+  "serialized_tower_count": 0,
+  "runtime_offsets_or_hooks": false,
+  "gameplay_verified": false,
+  "observed_load_failure": "User reports all supports underground; read-only saved-world audit found every generated BasePosition.Z zero despite nonzero waypoint and terrain heights. Static load fallback alone is insufficient.",
+  "approved_executable_variants": {
+    "08b7cadbc8c5358b65b536a56e24ba4193609dcb3bce5c9445695c01adc1a660": {
+      "name": "upstream-1.3.0-tree-limit-20000000",
+      "source": "oofbyte/Skieo-Map-Creator 2a6212b; install.raise_tree_limit",
+      "original_tree_limit": 1500000,
+      "tree_limit": 20000000,
+      "verification": "Applied the exact upstream four-byte tree-cap change to the pinned stock binary in memory; complete resulting SHA-256 pinned. Lift code unchanged; no gameplay certification."
+    }
+  }
+}

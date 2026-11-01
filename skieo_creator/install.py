@@ -462,10 +462,14 @@ def apply_entry(ua, ue, spec):
 
 # ---------------------------------------------------------------- packaging (map author side)
 
-def make_package(path, manifest, files_dir):
+def make_package(path, manifest, files_dir, reports=()):
     manifest = dict(manifest, format=manifest.get('format') or (2 if 'append' in manifest['entry'] else 1))
     with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as z:     # maps with snow
                                                                                                   # shells are ~280 MB
         z.writestr('manifest.json', json.dumps(manifest, indent=1))
         for f in manifest['files']:
             z.write(Path(files_dir) / f, f)
+        for f in reports:
+            if Path(f).name != f:
+                raise InstallError('Invalid report filename')
+            z.write(Path(files_dir) / 'Reports' / f, 'Reports/' + f)

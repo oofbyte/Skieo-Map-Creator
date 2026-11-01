@@ -7,6 +7,18 @@ needs from the player's own installed copy of the game.
 
 Fan-made; not affiliated with or endorsed by the developers of Ski-E-O!.
 
+## Optional lifts and trails
+
+Enable **Import lifts** and/or **Import trails** to download available
+OpenStreetMap data for the selected area. Supported objects are baked into the
+native starting state; use a new resort after creating or rebuilding a map.
+Coverage, omissions and attribution are included in the exported reports.
+
+Lift supports require a companion UE4SS initializer, installed automatically,
+which waits for terrain readiness before preparing native geometry. This
+experimental workflow is guarded to game build 26188119; passenger transport
+and save/reload still require game validation.
+
 ## Download
 
 Get `SkiEO-Map-Creator.exe` from [Releases](../../releases/latest). It's one file, no install. Windows may warn
@@ -32,9 +44,9 @@ built or uploaded by hand. Three ways to check one:
    source, and lists everything else inside (Python and the libraries in `requirements.txt`).
 
 What the app connects to: map tiles (OpenStreetMap, OpenTopoMap), place search (Photon, Nominatim) and elevation
-data (USGS 3DEP, AWS Terrain Tiles). retoc downloads the Oodle compression library on first use. No accounts, no
-telemetry. It writes to `%LOCALAPPDATA%\SkiEO Map Creator` and the game's `Content\Paks\~mods` folder, never to
-saves.
+data (USGS 3DEP, AWS Terrain Tiles), and optional OSM objects (public Overpass instances). retoc downloads the Oodle compression library on first use. No accounts, no
+telemetry. It writes to `%LOCALAPPDATA%\SkiEO Map Creator`, the game's `Content\Paks\~mods` folder and, when needed,
+its UE4SS mod folders. It does not edit personal save files.
 
 ## How it works
 
