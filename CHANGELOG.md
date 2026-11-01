@@ -3,10 +3,11 @@
 Maps made with an older version show **Rebuild recommended** in My Maps: one click on Rebuild gives them the fixes.
 
 ## v1.2.0
-- **Mod Library** tab: switch in-game mods on and off. The first one is **Weather Controls** (F9 in game): force
-  sunny / cloudy / snowing / blizzard, and turn snowfall, storms and temperature up or down live. Installs the UE4SS
-  mod loader too if you don't have it, and removes it again when switched off. The **Doppelmayr D-Line R2 Six** and
-  **R2 Gondola** lifts are in there too: switch them on and they appear in the build menu.
+- **Mod Library** (the brown button at the bottom): flip a switch to install a mod, flip it back to remove it.
+  - **Weather Controls** (F9 in game): force sunny / cloudy / snowing / blizzard, and turn snowfall, storms and
+    temperature up or down live. Fixes resorts getting buried in snow. Installs the UE4SS mod loader too if you
+    don't have it, and removes it again when switched off.
+  - **Doppelmayr D-Line R2 Six** and **R2 Gondola** lifts: switch them on and they appear in the build menu.
 - **Satellite** map view next to Topo and Streets.
 - **Treeline fade**: the forest thins out gradually below the treeline instead of stopping in a straight line
   (default 200 m; 0 = the old sharp edge).
