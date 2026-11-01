@@ -18,7 +18,8 @@ log = logging.getLogger(__name__)
 G = 2017
 STRIDE = 20
 BANDS = 10
-MAX_TREES = 1000000            # the most a map may get (tree limit slider): 1M shows in game, 2M showed no trees at all
+MAX_TREES = 1490000            # the most a map may get (tree limit slider): the game places none at all past
+                               # 1.5M (1,494,316 showed, 1,500,011 showed none; tested 2026-10-31), so a margin below
 DEFAULT_TREES = 250000         # about what the game's own maps have (Mad River Glen 195k, Sugar Bowl 256k)
 MIN_TREES = 25000
 # Full forest up to the map's tree slope ("Trees up to" slider), none at or above it. The default is where the game

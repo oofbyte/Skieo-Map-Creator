@@ -9,6 +9,7 @@ Maps made with an older version show **Rebuild recommended** in My Maps: one cli
 - **Satellite** map view next to Topo and Streets.
 - **Treeline fade**: the forest thins out gradually below the treeline instead of stopping in a straight line
   (default 200 m; 0 = the old sharp edge).
+- **Max trees** goes up to 1,490,000 (was 1,000,000). The game shows no trees at all from 1.5 million.
 - Maps up to **20 km** wide (was 12). The game's terrain grid stays the same size, so bigger maps are coarser
   (about 10 m between height points at 20 km).
 
