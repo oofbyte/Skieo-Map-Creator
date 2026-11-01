@@ -191,7 +191,7 @@ input[type=range] { width: 100%; accent-color: var(--steel); margin: 6px 0 2px; 
 .menu-bar.green { background-color: var(--green); }
 .menu-bar.blue { background-color: var(--blue); }
 .menu-bar.brown { background-color: #7a4b2a; }
-.menu-bar .sub { font-size: 12px; opacity: .85; margin-right: 4px; }
+.back { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
 .mods-cta { padding: 2px 16px 8px; }
 .mods-cta .menu-bar { margin-top: 0; }
 .mods-cta .lbl { white-space: nowrap; }

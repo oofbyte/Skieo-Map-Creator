@@ -693,7 +693,9 @@ async function loadMods() {
 }
 /* ------------------------------------------------------------ tabs, footer */
 
+let lastTab = 'create';
 function showTab(name) {
+  if (name !== 'mods') lastTab = name;
   document.querySelectorAll('.tag-tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === name));
   ['create', 'maps', 'mods'].forEach((n) => $('tab-' + n).classList.toggle('hidden', n !== name));
   $('modsBtn').classList.toggle('hidden', name === 'mods');
@@ -702,6 +704,7 @@ function showTab(name) {
 }
 document.querySelectorAll('.tag-tab').forEach((t) => { t.onclick = () => showTab(t.dataset.tab); });
 $('modsBtn').onclick = () => showTab('mods');
+$('modsBack').onclick = () => showTab(lastTab);
 document.querySelectorAll('[data-layer]').forEach((b) => {
   b.onclick = () => { setLayer(b.dataset.layer); call('set_setting', 'layer', S.layer); };
 });

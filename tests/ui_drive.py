@@ -125,7 +125,7 @@ def drive(win):
         wait_js(win, "document.querySelectorAll('#modsList .mrow, #modsList .empty').length > 0", 20)
         time.sleep(0.8)
         shot('62_mods')
-        js(win, "document.querySelector('[data-tab=create]').click()")
+        js(win, "document.getElementById('modsBack').click()")
         time.sleep(0.8)
         shot('63_back')
         js(win, "document.querySelector('[data-layer=topo]').click()")
