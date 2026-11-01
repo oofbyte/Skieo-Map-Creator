@@ -184,7 +184,8 @@ class Api:
             self._clean_incomplete()
         return dict(version=VERSION, app=APP_NAME, game=self._game_status(), biomes=biomes.listing(),
                     settings={k: self._settings.get(k) for k in SETTING_KEYS}, maps=self._maps(), token=server.TOKEN,
-                    limits=dict(min_km=MIN_KM, max_km=MAX_KM, min_trees=trees.MIN_TREES, max_trees=trees.MAX_TREES,
+                    limits=dict(min_km=MIN_KM, max_km=MAX_KM, min_trees=trees.MIN_TREES, max_trees=trees.max_trees(MAX_KM),
+                                trees_per_km2=trees.TREES_PER_KM2,
                                 default_trees=trees.DEFAULT_TREES, min_slope=trees.MIN_TREE_SLOPE,
                                 max_slope=trees.MAX_TREE_SLOPE, default_slope=trees.TREE_SLOPE,
                                 default_fade=trees.TREELINE_FADE, max_fade=trees.MAX_TREELINE_FADE))
@@ -220,6 +221,7 @@ class Api:
         self._game.build = build
         if self._gd is None or self._gd.fp != gamedata.game_fingerprint(folder):
             self._gd = gamedata.GameData(folder)
+        install.raise_tree_limit(folder)
         return dict(found=True, folder=str(folder), build=build, running=install.game_running(), ready=self._gd.ready())
 
     @_safe
@@ -516,7 +518,7 @@ class Api:
         return dict(name=name, lat=pv['lat'], lon=pv['lon'], size_m=size_m, size_km=pv['size_km'], biome=biome,
                     treeline=float(np.clip(treeline_m, 0, 9000)), valley=float(np.clip(float(params.get('valley_m') or 0), 0, 9000)),
                     snow=float(np.clip(float(params.get('snow', 1.0)), 0.2, 3.0)),
-                    max_trees=int(np.clip(int(float(params.get('max_trees') or trees.DEFAULT_TREES)), trees.MIN_TREES, trees.MAX_TREES)),
+                    max_trees=int(np.clip(int(float(params.get('max_trees') or trees.DEFAULT_TREES)), trees.MIN_TREES, trees.max_trees(pv['size_km']))),
                     tree_slope=float(np.clip(float(params.get('tree_slope') or trees.TREE_SLOPE), trees.MIN_TREE_SLOPE, trees.MAX_TREE_SLOPE)),
                     treeline_fade=float(np.clip(float(params.get('treeline_fade', trees.TREELINE_FADE)), 0, trees.MAX_TREELINE_FADE)),
                     acres=int(np.clip(int(params.get('acres') or 0) or self._acres(size_m), 10, 50000)),

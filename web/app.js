@@ -126,6 +126,17 @@ function drawSquare() {
   if (!map.hasLayer(sqLabel)) sqLabel.addTo(map);
   showNum('size');
   $('areaMeta').textContent = `${S.sq.lat.toFixed(5)}, ${S.sq.lon.toFixed(5)}`;
+  fitTrees();
+}
+
+// the tree limit follows the map's area at the game's own forest density (denser forests draw broken in game);
+// the count the player picked comes back when the map grows again
+function fitTrees() {
+  const t = $('trees');
+  if (!S.limits.trees_per_km2) return;
+  t.max = Math.round(S.limits.trees_per_km2 * S.sq.km * S.sq.km / 1000) * 1000;
+  t.value = Math.min(S.wantTrees || +t.value, +t.max);
+  showNum('trees');
 }
 
 function moveSquare(lat, lon) {
@@ -437,7 +448,7 @@ const NUMS = {
     apply: (v) => { $('trees').value = clampTo($('trees'), Math.round(v / 1000) * 1000); saveTrees(); renderSettings(); },
   },
 };
-function saveTrees() { call('set_setting', 'max_trees', +$('trees').value); }   // a slow PC wants the same next time
+function saveTrees() { S.wantTrees = +$('trees').value; call('set_setting', 'max_trees', S.wantTrees); }   // a slow PC wants the same next time
 function showNum(key, force) {
   const n = NUMS[key], box = $(n.box);
   if (!force && document.activeElement === box) return;      // don't overwrite what is being typed
@@ -758,6 +769,7 @@ async function start() {
   $('fade').max = S.limits.max_fade; $('fade').value = S.limits.default_fade;
   $('trees').min = S.limits.min_trees; $('trees').max = S.limits.max_trees;
   $('trees').value = isFinite(st.max_trees) && st.max_trees > 0 ? st.max_trees : S.limits.default_trees;
+  S.wantTrees = +$('trees').value;
   S.units = st.units === 'm' ? 'm' : 'ft';
   layers.topo = tileLayer('topo', 17);
   layers.osm = tileLayer('osm', 19);

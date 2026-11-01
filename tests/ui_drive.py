@@ -6,6 +6,8 @@ usage: python tests/ui_drive.py <out dir> <scenario>
              3d      -- load terrain, open the 3D view, topo texture, height, close
              3d-offline -- the same with the map tile servers unreachable, closing while it loads
              numbox  -- type exact values into the slider value boxes, show the "Map installed" box
+             treecap  -- the tree limit follows the map size (5M picked at 20 km, then 12 / 3 / 20 / 8 km)
+             bigtrees -- 20 km map with the most trees the slider allows: create and install (Ski-E-O must be closed)
   Set LOCALAPPDATA to a scratch folder to keep the test away from a creator that is running for real.
 """
 import ctypes
@@ -129,6 +131,62 @@ def drive(win):
         time.sleep(0.8)
         shot('63_back')
         js(win, "document.querySelector('[data-layer=topo]').click()")
+        print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
+    if SCEN == 'treecap':                                      # the tree limit follows the map size
+        def typ(box, text):
+            js(win, "var b = document.getElementById('%s'); b.focus(); b.value = %s;"
+                    "b.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))" % (box, json.dumps(text)))
+            time.sleep(0.4)
+        trees = "JSON.stringify([S.sq.km, +document.getElementById('trees').max, +document.getElementById('trees').value, document.getElementById('treesOut').value])"
+        typ('sizeOut', '20')
+        typ('treesOut', '5,000,000')
+        print('20 km, 5M picked ->', js(win, trees), flush=True)
+        typ('sizeOut', '12')
+        print('12 km ->', js(win, trees), flush=True)
+        typ('sizeOut', '3')
+        print('3 km ->', js(win, trees), flush=True)
+        typ('sizeOut', '20')
+        print('20 km again ->', js(win, trees), flush=True)
+        js(win, "var s = document.getElementById('size'); s.value = 8; s.oninput(); s.onchange();")
+        time.sleep(0.5)
+        print('slider dragged to 8 km ->', js(win, trees), flush=True)
+        js(win, "document.getElementById('panel').querySelector('#tab-create').scrollTop = 99999")
+        time.sleep(0.6)
+        shot('81_treecap')
+        print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
+    if SCEN == 'bigtrees':                                     # 20 km map with the most trees, created and installed
+        def typ(box, text):
+            js(win, "var b = document.getElementById('%s'); b.focus(); b.value = %s;"
+                    "b.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))" % (box, json.dumps(text)))
+            time.sleep(0.4)
+        js(win, "document.getElementById('q').value = 'Jackson Hole Mountain Resort'; doSearch();")
+        wait_js(win, "document.querySelectorAll('.row[data-i]').length > 0", 30)
+        js(win, "pickResult(0)")
+        time.sleep(2)
+        typ('sizeOut', os.environ.get('BT_KM', '20'))
+        js(win, "document.getElementById('loadBtn').click()")
+        wait_js(win, "!!S.preview", 300)
+        time.sleep(2)
+        js(win, "var n = document.getElementById('name'); n.value = %s; n.dispatchEvent(new Event('input'));"   # as typed
+                % json.dumps(os.environ.get('BT_NAME', 'UI Trees Max')))
+        typ('treesOut', os.environ.get('BT_TREES') or js(win, "document.getElementById('trees').max"))
+        if os.environ.get('BT_TL'):                            # treeline below the whole map: no trees at all
+            typ('tlOut', os.environ['BT_TL'])
+        if not wait_js(win, "!document.getElementById('createBtn').disabled", 900):   # a fresh profile unpacks game files first
+            print('create disabled:', js(win, "JSON.stringify({busy: !!busy(), job: S.job, preview: !!S.preview, game: S.game, "
+                                              "name: document.getElementById('name').value, nameBad: S.nameBad})"), flush=True)
+        js(win, "document.getElementById('panel').querySelector('#tab-create').scrollTop = 99999")
+        time.sleep(0.6)
+        shot('71_settings')
+        print('settings', js(win, "JSON.stringify({km: S.sq.km, trees: +document.getElementById('trees').value, "
+                                  "trees_max: +document.getElementById('trees').max, slope: +document.getElementById('slope').value, "
+                                  "treeline: +document.getElementById('treeline').value, "
+                                  "create: !document.getElementById('createBtn').disabled})"), flush=True)
+        js(win, "document.getElementById('createBtn').click()")
+        wait_js(win, "S.job && S.job.kind === 'create' && ['done', 'error', 'waiting'].includes(S.job.state)", 1200)
+        time.sleep(1.5)
+        shot('72_created')
+        print('job', js(win, "JSON.stringify(S.job)")[:600], flush=True)
         print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
     if SCEN == '3d':
         js(win, "document.getElementById('q').value = 'Killington Peak'; doSearch();")

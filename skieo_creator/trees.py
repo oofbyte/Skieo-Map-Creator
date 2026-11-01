@@ -18,14 +18,19 @@ log = logging.getLogger(__name__)
 G = 2017
 STRIDE = 20
 BANDS = 10
-MAX_TREES = 1490000            # the most a map may get (tree limit slider): the game places none at all past
-                               # 1.5M (1,494,316 showed, 1,500,011 showed none; tested 2026-10-31), so a margin below
+# The most trees a map may get (tree limit slider) is the game's own forest density over the map's area: its maps
+# average ~18,800 trees per km2 (Mad River Glen 19,007, Sugar Bowl 18,682), so 7.5M at 20 km. Millions of trees load in
+# square by square over several minutes after the map opens (7.5M on 20 km: up to ~10 min, slow until done; the UI
+# warns). The game drops all trees past 1.5M unless its exe limit is raised (install.raise_tree_limit).
+TREES_PER_KM2 = 18750
 DEFAULT_TREES = 250000         # about what the game's own maps have (Mad River Glen 195k, Sugar Bowl 256k)
 MIN_TREES = 25000
-# Full forest up to the map's tree slope ("Trees up to" slider), none at or above it. The default is where the game
-# draws bare rock ("extreme terrain", ~33 deg). Measured on the slope's steepest value around each vertex, so trees
-# don't stand right at a rock face either.
-TREE_SLOPE = 33.0
+# Full forest up to the map's tree slope ("Trees up to" slider), none at or above it. Measured on the slope's steepest
+# value around each vertex, so trees don't stand right at a rock face either. The default keeps big cliffs bare and
+# is about where the game's own forests end: their trees thin out from ~20 deg to ~5% density at 42 deg, and 99%
+# stand on ground up to 41 deg (Mad River Glen) / 38.5 deg (Sugar Bowl) in this measure (measured 2026-11-01 from
+# their baked obstacles and height textures).
+TREE_SLOPE = 42.0
 MIN_TREE_SLOPE, MAX_TREE_SLOPE = 20.0, 55.0
 TREELINE_FADE, MAX_TREELINE_FADE = 200.0, 1000.0   # m below the treeline over which forest thins out to nothing
 CONIFERS = ('Fir', 'Spruce', 'Pine', 'WhitebarkPine', 'Hemlock', 'Larch', 'Sclerophyll')
@@ -132,7 +137,11 @@ def open_ground(H, hmin, sp, sc, treeline, valley):
     return mask
 
 
-def plant(H, sp, sc, density_records, rng, open_mask, max_trees=MAX_TREES, tree_slope=TREE_SLOPE, weight=None):
+def max_trees(size_km):
+    return int(round(TREES_PER_KM2 * size_km * size_km, -3))
+
+
+def plant(H, sp, sc, density_records, rng, open_mask, max_trees=DEFAULT_TREES, tree_slope=TREE_SLOPE, weight=None):
     """tree positions (x, y in metres from the landscape corner, z in metres above its bottom) at the stock density,
     thinned evenly when that would give more than max_trees; none on ground steeper than tree_slope (deg);
     weight (0..1 per vertex, optional) thins them further"""
@@ -159,6 +168,7 @@ def plant(H, sp, sc, density_records, rng, open_mask, max_trees=MAX_TREES, tree_
          + Hf[y0 + 1, x0 + 1] * fx * fy)
     iy, ix = np.clip(np.rint(vy).astype(int), 0, G - 1), np.clip(np.rint(vx).astype(int), 0, G - 1)
     keep = rng.random(n) < ok[iy, ix]
+    keep &= np.cumsum(keep) <= max_trees      # the thinning is random; never past max_trees (the game drops ALL past its limit)
     return x[keep], y[keep], (h[keep] + 32768) * sc
 
 

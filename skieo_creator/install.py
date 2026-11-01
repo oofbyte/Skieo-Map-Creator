@@ -8,7 +8,9 @@ player's own original registry from the game, applies the entry of every install
 ZZZ_Registry_P in Content/Paks/~mods.
 """
 import json
+import logging
 import os
+import re
 import shutil
 import struct
 import subprocess
@@ -20,6 +22,8 @@ from pathlib import Path
 from . import paths
 from .engine import legacy_header as lh
 from .engine import levelentry as le
+
+log = logging.getLogger(__name__)
 
 APP_ID = '5012760'
 FORMAT = 1
@@ -142,6 +146,68 @@ def game_running():
         return GAME_EXE in (r.stdout or b'').decode('ascii', errors='replace').lower()
 
 
+# ---------------------------------------------------------------- tree limit
+
+# The game drops ALL of a map's trees when it has more than 1.5 million: its baked-obstacle reader does
+# ensure(RecordCount <= UObstacleDataManager::MaxBakedTrees) and rejects the whole blob. That compare is the only use
+# of the constant (the tree arrays follow the record count), so its immediate is raised in skieogame.exe.
+TREE_LIMIT = 20000000
+# cmp esi, imm32 ; jbe ok ; mov eax,1 ; lea rdx,[the "... records, over the bake cap" message]
+_TREE_CHECK = re.compile(rb'\x81\xFE(....)\x76.\xB8\x01\x00\x00\x00\x48\x8D\x15', re.S)
+_tree_limit_seen = {}
+
+
+def _tree_check_at(data):
+    """file offset of the tree limit (the compare's imm32), or None when the game code changed"""
+    pe = struct.unpack_from('<I', data, 0x3C)[0]
+    nsec, opt = struct.unpack_from('<H', data, pe + 6)[0], struct.unpack_from('<H', data, pe + 20)[0]
+    secs = [struct.unpack_from('<IIII', data, pe + 24 + opt + 40 * i + 8) for i in range(nsec)]   # vsize, va, rawsize, raw
+
+    def rva(o):
+        return next(va + o - raw for _, va, size, raw in secs if raw <= o < raw + size)
+    msg = data.find('over the bake cap'.encode('utf-16-le'))
+    if msg < 0:
+        return None
+    msg = rva(msg)
+    hits = [m for m in _TREE_CHECK.finditer(data)
+            if 0 <= msg - (rva(m.end()) + 4 + struct.unpack_from('<i', data, m.end())[0]) < 128]
+    return hits[0].start(1) if len(hits) == 1 else None
+
+
+def raise_tree_limit(folder):
+    """Sets the game's tree limit to TREE_LIMIT (game closed). Steam updates undo it, so it is checked whenever the
+    app looks at the game; cached per exe version. Returns the limit in effect (None: unknown, logged once)."""
+    exe = Path(folder) / 'SkiResortSimulator' / 'Binaries' / 'Win64' / GAME_EXE
+    key = (str(exe),)
+    try:
+        st = exe.stat()
+        key = (str(exe), st.st_size, st.st_mtime_ns)
+        if key in _tree_limit_seen:
+            return _tree_limit_seen[key]
+        data = exe.read_bytes()
+        at = _tree_check_at(data)
+        limit = at and struct.unpack_from('<I', data, at)[0]
+        if not at:
+            log.warning('tree limit check not found in %s: maps over 1.5M trees will show none', exe)
+        elif limit < TREE_LIMIT:
+            if game_running():
+                return limit                                    # the exe is locked; tried again next time
+            with open(exe, 'r+b') as f:
+                f.seek(at)
+                f.write(struct.pack('<I', TREE_LIMIT))
+            log.info('game tree limit raised from %d to %d', limit, TREE_LIMIT)
+            limit = TREE_LIMIT
+            st = exe.stat()
+            key = (str(exe), st.st_size, st.st_mtime_ns)
+    except (OSError, struct.error, StopIteration) as e:                # never let this break the app
+        if key in _tree_limit_seen:
+            return None
+        log.warning('could not raise the game tree limit: %s', e)
+        limit = None
+    _tree_limit_seen[key] = limit
+    return limit
+
+
 # ---------------------------------------------------------------- state
 
 class Game:
@@ -188,6 +254,7 @@ class Game:
 
     def install(self, package, progress=lambda msg: None):
         self.check_ready()
+        raise_tree_limit(self.folder)
         m = self.read_package(package)
         st = self.state()
         for mid, other in st['maps'].items():
