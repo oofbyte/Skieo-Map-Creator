@@ -190,6 +190,11 @@ input[type=range] { width: 100%; accent-color: var(--steel); margin: 6px 0 2px; 
 .menu-bar.big .lbl { font-size: 27px; }
 .menu-bar.green { background-color: var(--green); }
 .menu-bar.blue { background-color: var(--blue); }
+.menu-bar.brown { background-color: #7a4b2a; }
+.menu-bar .sub { font-size: 12px; opacity: .85; margin-right: 4px; }
+.mods-cta { padding: 2px 16px 8px; }
+.mods-cta .menu-bar { margin-top: 0; }
+.mods-cta .lbl { white-space: nowrap; }
 .menu-bar:hover:not(:disabled) { filter: brightness(1.1); }
 .menu-bar:active:not(:disabled) { transform: translateY(1px); }
 .menu-bar:disabled { background-color: #8f8a7e; cursor: default; filter: saturate(.3); opacity: .75; }

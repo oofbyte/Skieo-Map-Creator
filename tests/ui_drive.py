@@ -121,10 +121,13 @@ def drive(win):
         shot('61_fade')
         print('fade', js(win, "JSON.stringify({v: document.getElementById('fade').value, max: document.getElementById('fade').max, "
                               "box: document.getElementById('fadeOut').value, size_max: document.getElementById('size').max})"), flush=True)
-        js(win, "document.querySelector('[data-tab=mods]').click()")
+        js(win, "document.getElementById('modsBtn').click()")
         wait_js(win, "document.querySelectorAll('#modsList .mrow, #modsList .empty').length > 0", 20)
         time.sleep(0.8)
         shot('62_mods')
+        js(win, "document.querySelector('[data-tab=create]').click()")
+        time.sleep(0.8)
+        shot('63_back')
         js(win, "document.querySelector('[data-layer=topo]').click()")
         print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
     if SCEN == '3d':

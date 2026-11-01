@@ -693,16 +693,15 @@ async function loadMods() {
 }
 /* ------------------------------------------------------------ tabs, footer */
 
-document.querySelectorAll('.tag-tab').forEach((t) => {
-  t.onclick = () => {
-    document.querySelectorAll('.tag-tab').forEach((x) => x.classList.toggle('active', x === t));
-    $('tab-create').classList.toggle('hidden', t.dataset.tab !== 'create');
-    $('tab-maps').classList.toggle('hidden', t.dataset.tab !== 'maps');
-    $('tab-mods').classList.toggle('hidden', t.dataset.tab !== 'mods');
-    if (t.dataset.tab === 'maps') loadMaps();
-    if (t.dataset.tab === 'mods') loadMods();
-  };
-});
+function showTab(name) {
+  document.querySelectorAll('.tag-tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === name));
+  ['create', 'maps', 'mods'].forEach((n) => $('tab-' + n).classList.toggle('hidden', n !== name));
+  $('modsBtn').classList.toggle('hidden', name === 'mods');
+  if (name === 'maps') loadMaps();
+  if (name === 'mods') loadMods();
+}
+document.querySelectorAll('.tag-tab').forEach((t) => { t.onclick = () => showTab(t.dataset.tab); });
+$('modsBtn').onclick = () => showTab('mods');
 document.querySelectorAll('[data-layer]').forEach((b) => {
   b.onclick = () => { setLayer(b.dataset.layer); call('set_setting', 'layer', S.layer); };
 });
