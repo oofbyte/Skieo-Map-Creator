@@ -6,8 +6,10 @@ Maps made with an older version show **Rebuild recommended** in My Maps: one cli
 - **Millions of trees**: the game normally shows no trees at all on a map with more than 1.5 million. The creator now
   raises that limit for you: it changes that one number in `skieogame.exe` when it starts and before it installs a
   map, so it comes back by itself after a game update ("Verify integrity of game files" in Steam undoes it).
-- **Max trees follows the map size**, up to the game's own forest density (about 19,000 trees per km²): 2.7 million
-  on a 12 km map, 7.5 million on 20 km.
+- **The tree slider follows the map size**: picking a size sets it to the game's own forest density (about 19,000
+  trees per km²: 2.7 million on a 12 km map, 7.5 million on 20 km), which is also the most. You can still lower it.
+- **Snowfall** shows the yearly snowfall the game will show for the map next to the multiplier, e.g. 1.10 × (385″/yr).
+- **ft | m switch** next to "Your resort" (the same as Units at the bottom).
 - Larger maps with many trees can take **up to 10 minutes** to fully load in game: the forest fills in square by
   square and the game runs slowly until it is done (the app says so under the tree slider).
 - **Trees up to** starts at **42°** (was 33°), about where the game's own forests stop: steeper cliffs stay bare rock.

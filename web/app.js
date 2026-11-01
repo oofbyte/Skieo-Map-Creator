@@ -129,13 +129,13 @@ function drawSquare() {
   fitTrees();
 }
 
-// the tree limit follows the map's area at the game's own forest density (denser forests draw broken in game);
-// the count the player picked comes back when the map grows again
+// a new map size selects the game's own forest density for it (also the most); moving the square keeps a lowered count
 function fitTrees() {
   const t = $('trees');
   if (!S.limits.trees_per_km2) return;
   t.max = Math.round(S.limits.trees_per_km2 * S.sq.km * S.sq.km / 1000) * 1000;
-  t.value = Math.min(S.wantTrees || +t.value, +t.max);
+  if (S.treesKm !== S.sq.km) t.value = t.max;
+  S.treesKm = S.sq.km;
   showNum('trees');
 }
 
@@ -399,6 +399,13 @@ function applyDefaults(d) {
   if (!S.touched.snow) $('snow').value = (d.snows || {})[$('biome').value] ?? d.snow;
   renderSettings();
 }
+// what the game shows for the map: the biome's average annual snowfall times the multiplier
+function snowYear() {
+  const b = (S.biomes || []).find((x) => x.id === $('biome').value);
+  if (!b || !b.snow_in) return '';
+  const inch = b.snow_in * +$('snow').value;
+  return S.units === 'ft' ? ` (${Math.round(inch / 5) * 5}″/yr)` : ` (${(Math.round(inch * 2.54 / 10) * 10).toLocaleString('en-US')} cm/yr)`;
+}
 function renderSettings() {
   $('tlAuto').classList.toggle('hidden', !S.touched.treeline);
   ['treeline', 'fade', 'snow', 'valley', 'slope', 'trees'].forEach(showNum);
@@ -429,7 +436,7 @@ const NUMS = {
   },
   snow: {
     box: 'snowOut', unit: 'snowUnit', decimal: true,
-    show: () => [(+$('snow').value).toFixed(2), '×'],
+    show: () => [(+$('snow').value).toFixed(2), '×' + snowYear()],
     apply: (v) => { $('snow').value = clampTo($('snow'), Math.round(v * 100) / 100); S.touched.snow = true; renderSettings(); },
   },
   valley: {
@@ -445,10 +452,9 @@ const NUMS = {
   trees: {
     box: 'treesOut', unit: 'treesUnit',
     show: () => [(+$('trees').value).toLocaleString('en-US'), ''],
-    apply: (v) => { $('trees').value = clampTo($('trees'), Math.round(v / 1000) * 1000); saveTrees(); renderSettings(); },
+    apply: (v) => { $('trees').value = clampTo($('trees'), Math.round(v / 1000) * 1000); renderSettings(); },
   },
 };
-function saveTrees() { S.wantTrees = +$('trees').value; call('set_setting', 'max_trees', S.wantTrees); }   // a slow PC wants the same next time
 function showNum(key, force) {
   const n = NUMS[key], box = $(n.box);
   if (!force && document.activeElement === box) return;      // don't overwrite what is being typed
@@ -500,7 +506,6 @@ $('valley').oninput = renderSettings;
 $('slope').oninput = renderSettings;
 $('fade').oninput = renderSettings;
 $('trees').oninput = renderSettings;
-$('trees').onchange = saveTrees;
 let nameTimer = null;
 function checkName() {
   clearTimeout(nameTimer);
@@ -722,6 +727,7 @@ document.querySelectorAll('[data-layer]').forEach((b) => {
 document.querySelectorAll('[data-link]').forEach((b) => { b.onclick = () => call('link', b.dataset.link); });
 function renderUnits() {
   $('unitsBtn').textContent = S.units === 'ft' ? 'Units: feet' : 'Units: metres';
+  document.querySelectorAll('#unitsTop span').forEach((s) => s.classList.toggle('on', s.dataset.u === S.units));
   drawSquare(); renderSettings();
   if (S.preview) showStatsOnly();
   renderMaps();
@@ -731,7 +737,7 @@ function showStatsOnly() {
   $('stats').innerHTML = [['Peak', fmtElev(p.peak_m)], ['Base', fmtElev(p.base_m)], ['Vertical', fmtElev(p.relief_m)],
     ['Avg slope', Math.round(p.mean_slope) + '°']].map(([k, v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
 }
-$('unitsBtn').onclick = () => { S.units = S.units === 'ft' ? 'm' : 'ft'; call('set_setting', 'units', S.units); renderUnits(); };
+$('unitsBtn').onclick = $('unitsTop').onclick = () => { S.units = S.units === 'ft' ? 'm' : 'ft'; call('set_setting', 'units', S.units); renderUnits(); };
 $('gamePill').onclick = () => {
   const g = S.game;
   if (!g || !g.found) return locateGame();
@@ -768,8 +774,6 @@ async function start() {
   $('slope').min = S.limits.min_slope; $('slope').max = S.limits.max_slope; $('slope').value = S.limits.default_slope;
   $('fade').max = S.limits.max_fade; $('fade').value = S.limits.default_fade;
   $('trees').min = S.limits.min_trees; $('trees').max = S.limits.max_trees;
-  $('trees').value = isFinite(st.max_trees) && st.max_trees > 0 ? st.max_trees : S.limits.default_trees;
-  S.wantTrees = +$('trees').value;
   S.units = st.units === 'm' ? 'm' : 'ft';
   layers.topo = tileLayer('topo', 17);
   layers.osm = tileLayer('osm', 19);

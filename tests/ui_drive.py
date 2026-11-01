@@ -6,7 +6,8 @@ usage: python tests/ui_drive.py <out dir> <scenario>
              3d      -- load terrain, open the 3D view, topo texture, height, close
              3d-offline -- the same with the map tile servers unreachable, closing while it loads
              numbox  -- type exact values into the slider value boxes, show the "Map installed" box
-             treecap  -- the tree limit follows the map size (5M picked at 20 km, then 12 / 3 / 20 / 8 km)
+             units    -- yearly snowfall next to the multiplier, the ft | m switch
+             treecap  -- the tree slider follows the map size (5M typed at 20 km, then 12 / 3 / 20 / 8 km, a moved square)
              bigtrees -- 20 km map with the most trees the slider allows: create and install (Ski-E-O must be closed)
   Set LOCALAPPDATA to a scratch folder to keep the test away from a creator that is running for real.
 """
@@ -132,6 +133,34 @@ def drive(win):
         shot('63_back')
         js(win, "document.querySelector('[data-layer=topo]').click()")
         print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
+    if SCEN == 'units':                                        # yearly snowfall next to the multiplier, ft | m switch
+        js(win, "document.getElementById('q').value = 'Jackson Hole Mountain Resort'; doSearch();")
+        wait_js(win, "document.querySelectorAll('.row[data-i]').length > 0", 30)
+        js(win, "pickResult(0)")
+        time.sleep(2)
+        js(win, "document.getElementById('loadBtn').click()")
+        wait_js(win, "!!S.preview", 300)
+        time.sleep(2)
+        vals = ("JSON.stringify([document.getElementById('biome').value, document.getElementById('snowOut').value + ' ' + "
+                "document.getElementById('snowUnit').textContent, document.getElementById('tlOut').value + ' ' + "
+                "document.getElementById('tlUnit').textContent, document.querySelector('#unitsTop .on').textContent])")
+        print('feet   ->', js(win, vals), flush=True)
+        js(win, "document.getElementById('unitsTop').click()")
+        time.sleep(0.5)
+        print('metres ->', js(win, vals), flush=True)
+        js(win, "var s = document.getElementById('snow'); s.value = 1.6; s.oninput();")
+        time.sleep(0.3)
+        print('1.60x  ->', js(win, vals), flush=True)
+        js(win, "var b = document.getElementById('biome'); b.value = 'Hokkaido'; b.onchange();")
+        time.sleep(0.3)
+        print('Hokkaido ->', js(win, vals), flush=True)
+        js(win, "document.getElementById('panel').querySelector('#tab-create').scrollTop = 250")
+        time.sleep(0.6)
+        shot('91_units')
+        js(win, "document.getElementById('unitsTop').click()")
+        time.sleep(0.4)
+        print('back to feet ->', js(win, vals), flush=True)
+        print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
     if SCEN == 'treecap':                                      # the tree limit follows the map size
         def typ(box, text):
             js(win, "var b = document.getElementById('%s'); b.focus(); b.value = %s;"
@@ -150,6 +179,10 @@ def drive(win):
         js(win, "var s = document.getElementById('size'); s.value = 8; s.oninput(); s.onchange();")
         time.sleep(0.5)
         print('slider dragged to 8 km ->', js(win, trees), flush=True)
+        typ('treesOut', '1,000,000')
+        js(win, "moveSquare(S.sq.lat + 0.02, S.sq.lon + 0.02)")
+        time.sleep(0.5)
+        print('lowered to 1M, square moved ->', js(win, trees), flush=True)
         js(win, "document.getElementById('panel').querySelector('#tab-create').scrollTop = 99999")
         time.sleep(0.6)
         shot('81_treecap')

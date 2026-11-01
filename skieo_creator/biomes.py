@@ -84,5 +84,13 @@ def defaults(lat, lon):
                 snows={b: v['snow'] for b, v in BIOMES.items()})
 
 
+# AverageAnnualSnowfallInches of the game's DA_BiomeSettings_* (build 26187996): the game shows a map's snowfall as this
+# times the map's snowfall multiplier (Utah at 1.10: 385"/yr)
+SNOWFALL_IN = dict(Alps=280, Andes=288, AustralianAlps=80, CanadianRockies=180, Changbai=70, CoastMountains=460,
+                   HawaiiAlpine=40, Hokkaido=590, Northeast=182, PNW=388, Patagonia=118, Rockies=274, Scandes=160,
+                   SouthernAlpsNZ=150, Taebaek=100, Tahoe=275, Utah=350)
+
+
 def listing():
-    return [dict(id=k, label=v['label'], snow=v['snow']) for k, v in sorted(BIOMES.items(), key=lambda kv: kv[1]['label'])]
+    return [dict(id=k, label=v['label'], snow=v['snow'], snow_in=SNOWFALL_IN.get(k))
+            for k, v in sorted(BIOMES.items(), key=lambda kv: kv[1]['label'])]

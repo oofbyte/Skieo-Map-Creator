@@ -38,7 +38,7 @@ NOMINATIM = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&q=
 MIN_KM, MAX_KM = 3.0, 20.0                  # same 2017x2017 grid at every size: ~10 m between points at 20 km
 PREFIX = 'mc_'
 ORDER_BASE = 1000
-SETTING_KEYS = ('units', 'layer', 'view', 'max_trees')
+SETTING_KEYS = ('units', 'layer', 'view')
 # resort names: plain letters / digits / space and a little punctuation (the page turns accents into plain letters)
 NAME_CHARS = re.compile(r"[A-Za-z0-9 '.&()\-]+")
 NAME_RULE = "Names can use letters A-Z, numbers, spaces and - ' . & ( )"
@@ -186,7 +186,7 @@ class Api:
                     settings={k: self._settings.get(k) for k in SETTING_KEYS}, maps=self._maps(), token=server.TOKEN,
                     limits=dict(min_km=MIN_KM, max_km=MAX_KM, min_trees=trees.MIN_TREES, max_trees=trees.max_trees(MAX_KM),
                                 trees_per_km2=trees.TREES_PER_KM2,
-                                default_trees=trees.DEFAULT_TREES, min_slope=trees.MIN_TREE_SLOPE,
+                                min_slope=trees.MIN_TREE_SLOPE,
                                 max_slope=trees.MAX_TREE_SLOPE, default_slope=trees.TREE_SLOPE,
                                 default_fade=trees.TREELINE_FADE, max_fade=trees.MAX_TREELINE_FADE))
 

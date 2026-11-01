@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 G = 2017
 STRIDE = 20
 BANDS = 10
-# The most trees a map may get (tree limit slider) is the game's own forest density over the map's area: its maps
+# The tree slider starts at, and goes up to, the game's own forest density over the map's area: its maps
 # average ~18,800 trees per km2 (Mad River Glen 19,007, Sugar Bowl 18,682), so 7.5M at 20 km. Millions of trees load in
 # square by square over several minutes after the map opens (7.5M on 20 km: up to ~10 min, slow until done; the UI
 # warns). The game drops all trees past 1.5M unless its exe limit is raised (install.raise_tree_limit).
