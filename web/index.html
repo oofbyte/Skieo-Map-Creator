@@ -22,6 +22,7 @@
     <div class="hud-group" role="group" aria-label="Map style">
       <button class="hud-btn" data-layer="topo" title="Topographic map with contour lines">Topo</button>
       <button class="hud-btn" data-layer="osm" title="OpenStreetMap standard map">Streets</button>
+      <button class="hud-btn" data-layer="sat" title="Satellite and aerial photos (Esri World Imagery)">Satellite</button>
     </div>
     <button class="hud-btn solo" id="overlayBtn" title="Show the loaded terrain on the map" disabled>Terrain overlay</button>
   </div>
@@ -44,6 +45,7 @@
           <nav class="tabs" role="tablist">
             <button class="tag-tab active" data-tab="create" role="tab">Create</button>
             <button class="tag-tab" data-tab="maps" role="tab">My Maps<span class="count" id="mapCount"></span></button>
+            <button class="tag-tab" data-tab="mods" role="tab">Mod Library</button>
           </nav>
           <button id="gamePill" class="status" title="Game status"><i></i><span>Looking for Ski-E-O...</span></button>
         </div>
@@ -62,7 +64,7 @@
             <div class="sect-h"><span class="num">1</span><h2>Choose the area</h2></div>
             <p class="note">Fit the mountain inside the square: the summit, and some flat ground at the bottom for the base lodge.</p>
             <div class="row-label"><label for="size">Area size</label><span class="numval"><input class="num-in" id="sizeOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Area size in km" title="Type a value, then press Enter"><span class="num-unit" id="sizeUnit"></span></span></div>
-            <input type="range" id="size" min="3" max="12" step="0.1" value="8">
+            <input type="range" id="size" min="3" max="20" step="0.1" value="8">
             <div class="meta" id="areaMeta"></div>
             <button class="menu-bar blue" id="loadBtn"><span class="tile"><svg><use href="#i-mountain"/></svg></span><span class="lbl">Load Terrain</span><span class="chev">&rsaquo;</span></button>
           </div>
@@ -84,6 +86,9 @@
             <div class="meta" id="biomeHint"></div>
             <div class="row-label"><label for="treeline">Treeline</label><span><span class="numval"><input class="num-in" id="tlOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Treeline" title="Type a value, then press Enter"><span class="num-unit" id="tlUnit"></span></span> <button class="link" id="tlAuto">auto</button></span></div>
             <input type="range" id="treeline" min="0" max="4500" step="any">
+            <div class="row-label"><label for="fade">Treeline fade</label><span class="numval"><input class="num-in" id="fadeOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Treeline fade" title="Type a value, then press Enter"><span class="num-unit" id="fadeUnit"></span></span></div>
+            <input type="range" id="fade" min="0" max="1000" step="any" value="200">
+            <div class="meta">The forest thins out gradually over this height below the treeline. 0 = a sharp edge.</div>
             <div class="row-label"><label for="snow">Snowfall</label><span class="numval"><input class="num-in" id="snowOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Snowfall multiplier" title="Type a value, then press Enter"><span class="num-unit" id="snowUnit"></span></span></div>
             <input type="range" id="snow" min="0.2" max="2.5" step="0.01" value="1">
             <div class="row-label"><label for="slope">Trees up to</label><span class="numval"><input class="num-in" id="slopeOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Steepest slope with trees" title="Type a value, then press Enter"><span class="num-unit" id="slopeUnit"></span></span></div>
@@ -126,6 +131,12 @@
           <div id="mapsList"></div>
         </section>
 
+        <section id="tab-mods" class="scroll hidden">
+          <div class="meta">In-game mods with their own menu. Switching one on installs it (and the UE4SS mod loader, if you don't have it);
+            switching it off removes it again. Close the game first.</div>
+          <div id="modsList"></div>
+        </section>
+
         <footer>
           <div class="foot-links">
             <button class="link" id="unitsBtn"></button>
@@ -134,7 +145,7 @@
             <span class="ver" id="ver"></span>
           </div>
           <div class="attrib">Map data &copy; <button class="link" data-link="osm">OpenStreetMap</button> contributors,
-            style <button class="link" data-link="otm">OpenTopoMap</button> (CC-BY-SA) &middot; Search
+            style <button class="link" data-link="otm">OpenTopoMap</button> (CC-BY-SA), satellite <button class="link" data-link="esri">Esri, Maxar, Earthstar Geographics</button> &middot; Search
             <button class="link" data-link="photon">Photon</button>, <button class="link" data-link="nominatim">Nominatim</button> &middot; Elevation <button class="link" data-link="usgs">USGS 3DEP</button>,
             <button class="link" data-link="terrain">Terrain Tiles</button> &middot; <button class="link" data-link="leaflet">Leaflet</button></div>
         </footer>

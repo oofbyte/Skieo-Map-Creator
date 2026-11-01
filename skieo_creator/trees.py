@@ -26,6 +26,7 @@ MIN_TREES = 25000
 # don't stand right at a rock face either.
 TREE_SLOPE = 33.0
 MIN_TREE_SLOPE, MAX_TREE_SLOPE = 20.0, 55.0
+TREELINE_FADE, MAX_TREELINE_FADE = 200.0, 1000.0   # m below the treeline over which forest thins out to nothing
 CONIFERS = ('Fir', 'Spruce', 'Pine', 'WhitebarkPine', 'Hemlock', 'Larch', 'Sclerophyll')
 BROADLEAF = ('Aspen', 'Birch', 'Maple', 'Oak', 'MountainBirch', 'SouthernBeech', 'SnowGum')
 
@@ -130,9 +131,10 @@ def open_ground(H, hmin, sp, sc, treeline, valley):
     return mask
 
 
-def plant(H, sp, sc, density_records, rng, open_mask, max_trees=MAX_TREES, tree_slope=TREE_SLOPE):
+def plant(H, sp, sc, density_records, rng, open_mask, max_trees=MAX_TREES, tree_slope=TREE_SLOPE, weight=None):
     """tree positions (x, y in metres from the landscape corner, z in metres above its bottom) at the stock density,
-    thinned evenly when that would give more than max_trees; none on ground steeper than tree_slope (deg)"""
+    thinned evenly when that would give more than max_trees; none on ground steeper than tree_slope (deg);
+    weight (0..1 per vertex, optional) thins them further"""
     rec = np.frombuffer(density_records, np.uint8).reshape(-1, STRIDE)
     X = rec[:, 0:4].copy().view('<i4').ravel() / 1000.0
     Y = rec[:, 4:8].copy().view('<i4').ravel() / 1000.0
@@ -141,6 +143,8 @@ def plant(H, sp, sc, density_records, rng, open_mask, max_trees=MAX_TREES, tree_
     ext = (G - 1) * sp
     # vertices a tree may stand on: gentler than tree_slope, not open ground
     ok = ((_local_max(_slope(H, sp, sc), 1) < tree_slope) & ~open_mask).astype(np.float64)
+    if weight is not None:
+        ok *= weight
     area_frac = max(float(ok.mean()), 0.01)                 # the share of the map trees can grow on
     n = min(int(ext * ext * dens), int(max_trees / area_frac))
     x = rng.uniform(0.5, ext - 0.5, n)
@@ -187,7 +191,7 @@ def _target_species(name, rule, available):
 
 
 def forest(H, hmin, sp, sc, biome, treeline, valley, donors, species, biome_species, seed, max_trees=DEFAULT_TREES,
-           tree_slope=TREE_SLOPE):
+           tree_slope=TREE_SLOPE, treeline_fade=0.0):
     """-> (record bytes, table bytes, header tail, {species: count})
     donors: {'mrg': skob, 'sb': skob}; species: {short name: [(size, state, trunk)]}; biome_species: short names"""
     rng = np.random.default_rng(seed)
@@ -196,7 +200,11 @@ def forest(H, hmin, sp, sc, biome, treeline, valley, donors, species, biome_spec
     if not spec['donor'] or not biome_species:
         return b'', encode_table([]), hdr_tail, {}
     mask = open_ground(H, hmin, sp, sc, treeline, valley)
-    x, y, z = plant(H, sp, sc, donors['mrg']['records'], rng, mask, max_trees=max_trees, tree_slope=tree_slope)
+    weight = None
+    if treeline > 0 and treeline_fade > 0:                 # forest thins out over the last treeline_fade m below it
+        weight = np.clip((treeline - ((H.astype(np.float64) + 32768) * sc + hmin)) / treeline_fade, 0.0, 1.0)
+    x, y, z = plant(H, sp, sc, donors['mrg']['records'], rng, mask, max_trees=max_trees, tree_slope=tree_slope,
+                    weight=weight)
     m = len(x)
     donor = donors[spec['donor']]
     hdr_tail = donor['hdr'][16:]

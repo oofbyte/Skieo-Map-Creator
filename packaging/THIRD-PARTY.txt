@@ -9,6 +9,8 @@ Software
 * Leaflet 1.9.4 (BSD 2-Clause) -- https://leafletjs.com -- web/vendor/leaflet/LICENSE
 * three.js r160 with OrbitControls (MIT) -- https://threejs.org -- web/vendor/three/LICENSE
 * retoc (MIT) -- https://github.com/trumank/retoc -- tools/retoc-LICENSE
+* UE4SS v3.0.1 experimental (MIT) -- https://github.com/UE4SS-RE/RE-UE4SS -- data/ue4ss/ue4ss/LICENSE
+  Installed into the game only when a Mod Library mod is switched on and the game has no UE4SS yet.
   retoc downloads the Oodle compression library on first use.
 * pywebview (BSD 3-Clause), pythonnet (MIT), NumPy (BSD 3-Clause), Pillow (MIT-CMU), tifffile (BSD 3-Clause), Python (PSF)
 * Microsoft Edge WebView2 Runtime (installed on Windows; not included)
@@ -23,6 +25,7 @@ Map and elevation data (downloaded while you use the app)
 ---------------------------------------------------------
 * Map data (c) OpenStreetMap contributors, ODbL -- https://www.openstreetmap.org/copyright
 * Map style (c) OpenTopoMap, CC-BY-SA -- https://opentopomap.org
+* Satellite imagery: Esri World Imagery (Esri, Maxar, Earthstar Geographics, and the GIS User Community)
 * Place search: Photon by komoot (OpenStreetMap data) and Nominatim (OpenStreetMap Foundation)
 * Elevation inside the USA: USGS 3D Elevation Program (public domain)
 * Elevation elsewhere: Terrain Tiles on AWS Open Data (Mapzen; sources include SRTM, GMTED2010, ETOPO1, 3DEP and others)

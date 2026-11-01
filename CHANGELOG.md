@@ -2,6 +2,16 @@
 
 Maps made with an older version show **Rebuild recommended** in My Maps: one click on Rebuild gives them the fixes.
 
+## v1.2.0
+- **Mod Library** tab: switch in-game mods on and off. The first one is **Weather Controls** (F9 in game): force
+  sunny / cloudy / snowing / blizzard, and turn snowfall, storms and temperature up or down live. Installs the UE4SS
+  mod loader too if you don't have it, and removes it again when switched off.
+- **Satellite** map view next to Topo and Streets.
+- **Treeline fade**: the forest thins out gradually below the treeline instead of stopping in a straight line
+  (default 200 m; 0 = the old sharp edge).
+- Maps up to **20 km** wide (was 12). The game's terrain grid stays the same size, so bigger maps are coarser
+  (about 10 m between height points at 20 km).
+
 ## v1.1.10
 - Number boxes accept European decimals: `0,93` works like `0.93`, and `3.500 m` counts as thousands.
 

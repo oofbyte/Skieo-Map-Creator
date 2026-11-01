@@ -1,16 +1,16 @@
 VSVersionInfo(
-  ffi=FixedFileInfo(filevers=(1, 1, 10, 0), prodvers=(1, 1, 10, 0), mask=0x3f, flags=0x0, OS=0x40004,
+  ffi=FixedFileInfo(filevers=(1, 2, 0, 0), prodvers=(1, 2, 0, 0), mask=0x3f, flags=0x0, OS=0x40004,
                     fileType=0x1, subtype=0x0, date=(0, 0)),
   kids=[
     StringFileInfo([StringTable('040904B0', [
       StringStruct('CompanyName', 'Ski-E-O community'),
       StringStruct('FileDescription', 'Ski-E-O Map Creator'),
-      StringStruct('FileVersion', '1.1.10'),
+      StringStruct('FileVersion', '1.2.0'),
       StringStruct('InternalName', 'SkiEO-Map-Creator'),
       StringStruct('LegalCopyright', 'Fan-made tool, not affiliated with the developers of Ski-E-O!'),
       StringStruct('OriginalFilename', 'SkiEO-Map-Creator.exe'),
       StringStruct('ProductName', 'Ski-E-O Map Creator'),
-      StringStruct('ProductVersion', '1.1.10')])]),
+      StringStruct('ProductVersion', '1.2.0')])]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
   ]
 )

@@ -9,7 +9,7 @@ const S = {
   token: Q.get('t') || '',
   // map tiles come from their own local port, so slow / failing tile downloads never hold up the app's requests
   tiles: /^\d+$/.test(Q.get('tp') || '') ? `http://127.0.0.1:${Q.get('tp')}` : '',
-  units: 'ft', layer: 'topo', game: null, biomes: [], limits: { min_km: 3, max_km: 12 },
+  units: 'ft', layer: 'topo', game: null, biomes: [], limits: { min_km: 3, max_km: 20 },
   sq: { lat: 45.92, lon: 6.88, km: 8 }, preview: null, job: null, maps: [], overlayOn: true,
   touched: { biome: false, treeline: false, snow: false, name: false }, suggestName: '',
   dragging: false, busyPoll: null,
@@ -390,7 +390,7 @@ function applyDefaults(d) {
 }
 function renderSettings() {
   $('tlAuto').classList.toggle('hidden', !S.touched.treeline);
-  ['treeline', 'snow', 'valley', 'slope', 'trees'].forEach(showNum);
+  ['treeline', 'fade', 'snow', 'valley', 'slope', 'trees'].forEach(showNum);
 }
 
 /* The value next to each slider is a box you can type into: Enter (or clicking away) applies it, Esc undoes.
@@ -410,6 +410,11 @@ const NUMS = {
     box: 'tlOut', unit: 'tlUnit', zero: 'none',
     show: () => { const m = +$('treeline').value; return m <= 0 ? ['none', '(trees everywhere)'] : [Math.round(toUnits(m)).toLocaleString('en-US'), unitName()]; },
     apply: (v) => { $('treeline').value = clampTo($('treeline'), fromUnits(v)); S.touched.treeline = true; renderSettings(); },
+  },
+  fade: {
+    box: 'fadeOut', unit: 'fadeUnit', zero: 'sharp',
+    show: () => { const m = +$('fade').value; return m <= 0 ? ['sharp', ''] : [Math.round(toUnits(m)).toLocaleString('en-US'), unitName()]; },
+    apply: (v) => { $('fade').value = clampTo($('fade'), fromUnits(v)); renderSettings(); },
   },
   snow: {
     box: 'snowOut', unit: 'snowUnit', decimal: true,
@@ -482,6 +487,7 @@ $('tlAuto').onclick = () => { S.touched.treeline = false; $('treeline').value = 
 $('snow').oninput = () => { S.touched.snow = true; renderSettings(); };
 $('valley').oninput = renderSettings;
 $('slope').oninput = renderSettings;
+$('fade').oninput = renderSettings;
 $('trees').oninput = renderSettings;
 $('trees').onchange = saveTrees;
 let nameTimer = null;
@@ -532,7 +538,7 @@ $('createBtn').onclick = async () => {
   const r = await call('create', {
     name, lat: S.preview.lat, lon: S.preview.lon, size_km: S.preview.size_km, biome: $('biome').value,
     treeline_m: +$('treeline').value, snow: +$('snow').value, valley_m: +$('valley').value, max_trees: +$('trees').value,
-    tree_slope: +$('slope').value,
+    tree_slope: +$('slope').value, treeline_fade: +$('fade').value,
     base: S.preview.base,             // flattest low ground, picked when the terrain loaded
   });
   if (!r.ok) return errorBox(r.error);
@@ -655,6 +661,28 @@ async function mapAction(slug, a) {
   if (!r.ok) return errorBox(r.error);
   startJob(r);
 }
+/* ------------------------------------------------------------ mod library */
+function renderMods(r) {
+  if (!r.found) { $('modsList').innerHTML = '<div class="empty">Ski-E-O was not found.</div>'; return; }
+  $('modsList').innerHTML = r.mods.map((m) => `<div class="mrow" data-mod="${esc(m.id)}">
+      <div class="mi"><h4>${esc(m.name)}</h4>
+        <div class="sub">${esc(m.about)}</div>
+        ${m.on ? `<span class="badge">On: press ${esc(m.key)} in game</span>` : '<span class="badge off">Off</span>'}
+        <div class="mact"><button class="link" data-on="${m.on ? 0 : 1}">${m.on ? 'Switch off' : 'Switch on'}</button></div>
+      </div></div>`).join('');
+  $('modsList').querySelectorAll('[data-on]').forEach((b) => {
+    b.onclick = async () => {
+      const res = await call('set_mod', b.closest('.mrow').dataset.mod, b.dataset.on === '1');
+      if (!res.ok) return errorBox(res.error);
+      renderMods(res);
+    };
+  });
+}
+async function loadMods() {
+  const r = await call('mod_library');
+  if (!r.ok) return errorBox(r.error);
+  renderMods(r);
+}
 /* ------------------------------------------------------------ tabs, footer */
 
 document.querySelectorAll('.tag-tab').forEach((t) => {
@@ -662,7 +690,9 @@ document.querySelectorAll('.tag-tab').forEach((t) => {
     document.querySelectorAll('.tag-tab').forEach((x) => x.classList.toggle('active', x === t));
     $('tab-create').classList.toggle('hidden', t.dataset.tab !== 'create');
     $('tab-maps').classList.toggle('hidden', t.dataset.tab !== 'maps');
+    $('tab-mods').classList.toggle('hidden', t.dataset.tab !== 'mods');
     if (t.dataset.tab === 'maps') loadMaps();
+    if (t.dataset.tab === 'mods') loadMods();
   };
 });
 document.querySelectorAll('[data-layer]').forEach((b) => {
@@ -715,11 +745,13 @@ async function start() {
   fillBiomes(r.biomes);
   const st = r.settings || {};
   $('slope').min = S.limits.min_slope; $('slope').max = S.limits.max_slope; $('slope').value = S.limits.default_slope;
+  $('fade').max = S.limits.max_fade; $('fade').value = S.limits.default_fade;
   $('trees').min = S.limits.min_trees; $('trees').max = S.limits.max_trees;
   $('trees').value = isFinite(st.max_trees) && st.max_trees > 0 ? st.max_trees : S.limits.default_trees;
   S.units = st.units === 'm' ? 'm' : 'ft';
   layers.topo = tileLayer('topo', 17);
   layers.osm = tileLayer('osm', 19);
+  layers.sat = tileLayer('sat', 19);
   setLayer(st.layer || 'topo');
   const v = st.view;
   if (v && isFinite(v.lat) && isFinite(v.lon)) {

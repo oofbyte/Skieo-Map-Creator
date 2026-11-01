@@ -19,13 +19,14 @@ import webbrowser
 import numpy as np
 from PIL import Image
 
-from . import APP_NAME, VERSION, biomes, builder, dem, gamedata, geo, install, net, paths, server, trees
+from . import APP_NAME, VERSION, biomes, builder, dem, gamedata, geo, install, modlib, net, paths, server, trees
 
 log = logging.getLogger(__name__)
 GAME_URL = 'steam://rungameid/5012760'
 LINKS = {
     'osm': 'https://www.openstreetmap.org/copyright',
     'otm': 'https://opentopomap.org/about',
+    'esri': 'https://www.esri.com/en-us/legal/terms/data-attributions',
     'nominatim': 'https://nominatim.org/',
     'photon': 'https://photon.komoot.io/',
     'usgs': 'https://www.usgs.gov/3d-elevation-program',
@@ -34,7 +35,7 @@ LINKS = {
 }
 PHOTON = 'https://photon.komoot.io/api/?limit=12&q='
 NOMINATIM = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&q='
-MIN_KM, MAX_KM = 3.0, 12.0
+MIN_KM, MAX_KM = 3.0, 20.0                  # same 2017x2017 grid at every size: ~10 m between points at 20 km
 PREFIX = 'mc_'
 ORDER_BASE = 1000
 SETTING_KEYS = ('units', 'layer', 'view', 'max_trees')
@@ -185,7 +186,8 @@ class Api:
                     settings={k: self._settings.get(k) for k in SETTING_KEYS}, maps=self._maps(), token=server.TOKEN,
                     limits=dict(min_km=MIN_KM, max_km=MAX_KM, min_trees=trees.MIN_TREES, max_trees=trees.MAX_TREES,
                                 default_trees=trees.DEFAULT_TREES, min_slope=trees.MIN_TREE_SLOPE,
-                                max_slope=trees.MAX_TREE_SLOPE, default_slope=trees.TREE_SLOPE))
+                                max_slope=trees.MAX_TREE_SLOPE, default_slope=trees.TREE_SLOPE,
+                                default_fade=trees.TREELINE_FADE, max_fade=trees.MAX_TREELINE_FADE))
 
     def _find_game(self):
         f = self._settings.get('game_folder')
@@ -348,6 +350,23 @@ class Api:
             self._settings.set(**{key: value})
 
     @_safe
+    def mod_library(self):
+        st = self._game_status()
+        return dict(found=False) if not st['found'] else dict(found=True, running=st['running'], **modlib.status(st['folder']))
+
+    @_safe
+    def set_mod(self, mod_id, on):
+        st = self._game_status()
+        if not st['found']:
+            raise UserError('Ski-E-O was not found.')
+        if mod_id not in modlib.MODS:
+            raise UserError('Unknown mod.')
+        if install.game_running():
+            raise UserError('Close Ski-E-O first, then try again.')
+        log.info('mod %s -> %s', mod_id, 'on' if on else 'off')
+        return dict(found=True, running=False, **modlib.set_mod(st['folder'], mod_id, bool(on)))
+
+    @_safe
     def link(self, name):
         if name in LINKS:
             webbrowser.open(LINKS[name])
@@ -497,6 +516,7 @@ class Api:
                     snow=float(np.clip(float(params.get('snow', 1.0)), 0.2, 3.0)),
                     max_trees=int(np.clip(int(float(params.get('max_trees') or trees.DEFAULT_TREES)), trees.MIN_TREES, trees.MAX_TREES)),
                     tree_slope=float(np.clip(float(params.get('tree_slope') or trees.TREE_SLOPE), trees.MIN_TREE_SLOPE, trees.MAX_TREE_SLOPE)),
+                    treeline_fade=float(np.clip(float(params.get('treeline_fade', trees.TREELINE_FADE)), 0, trees.MAX_TREELINE_FADE)),
                     acres=int(np.clip(int(params.get('acres') or 0) or self._acres(size_m), 10, 50000)),
                     base_rc=[row, col], base_latlon=[float(params['base'][0]), float(params['base'][1])],
                     source=pv['src'], seed=secrets.randbelow(2 ** 31 - 1) + 1, tg=secrets.randbelow(2 ** 31 - 2) + 1,
@@ -511,7 +531,7 @@ class Api:
         taken = {r['slug'] for r in self._records()} | {i[len(PREFIX):] for i in self._game.installed() if i.startswith(PREFIX)}
         slug = builder.new_slug(p['name'], taken)
         spec = dict((k, p[k]) for k in ('name', 'lat', 'lon', 'size_m', 'biome', 'treeline', 'valley', 'snow', 'max_trees',
-                                        'tree_slope', 'acres', 'base_rc', 'base_latlon', 'seed', 'tg', 'source'))
+                                        'tree_slope', 'treeline_fade', 'acres', 'base_rc', 'base_latlon', 'seed', 'tg', 'source'))
         spec['slug'] = slug
         d = self._preview['dem'] if self._preview else None
         if d is None:

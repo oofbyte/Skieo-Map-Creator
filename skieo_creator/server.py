@@ -20,6 +20,8 @@ log = logging.getLogger(__name__)
 LAYERS = {
     'osm': dict(url='https://tile.openstreetmap.org/{z}/{x}/{y}.png', max_zoom=19),
     'topo': dict(url='https://tile.opentopomap.org/{z}/{x}/{y}.png', max_zoom=17),
+    'sat': dict(url='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                max_zoom=19, accept='image/jpeg'),
 }
 TILE_DAYS = 14
 TILE_CACHE_MB = 400
@@ -67,7 +69,7 @@ def tile(layer, z, x, y):
     stale = f.read_bytes() if f.is_file() else None      # stale beats nothing when offline
     try:
         _OfflineGate(layer).check()
-        data = net.get(spec['url'].format(z=z, x=x, y=y), timeout=20, retries=1, per_host=2, accept='image/png',
+        data = net.get(spec['url'].format(z=z, x=x, y=y), timeout=20, retries=1, per_host=2, accept=spec.get('accept', 'image/png'),
                        cancel=_OfflineGate(layer))
     except net.Cancelled:
         return stale
@@ -149,7 +151,7 @@ class Handler(BaseHTTPRequestHandler):
             data = tile(parts[1], z, x, y)
             if data is None:
                 return self._send(200, EMPTY_PNG, 'image/png', 'no-store')
-            return self._send(200, data, 'image/png', 'max-age=86400')
+            return self._send(200, data, 'image/jpeg' if data[:2] == b'\xff\xd8' else 'image/png', 'max-age=86400')
         rel = '/'.join(p for p in parts if p not in ('', '.', '..')) or 'index.html'
         f = paths.resource('web', *rel.split('/'))
         web = paths.resource('web').resolve()

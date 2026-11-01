@@ -112,6 +112,21 @@ def drive(win):
         js(win, "document.querySelector('[data-tab=maps]').click()")
         time.sleep(1.5)
         shot('09_maps')
+    if SCEN == 'features':                                     # satellite layer, treeline fade, mod library tab
+        js(win, "document.querySelector('[data-layer=sat]').click(); map.setView([45.87, 6.92], 13)")
+        time.sleep(6)
+        shot('60_satellite')
+        js(win, "document.getElementById('panel').querySelector('#tab-create').scrollTop = 600")
+        time.sleep(0.6)
+        shot('61_fade')
+        print('fade', js(win, "JSON.stringify({v: document.getElementById('fade').value, max: document.getElementById('fade').max, "
+                              "box: document.getElementById('fadeOut').value, size_max: document.getElementById('size').max})"), flush=True)
+        js(win, "document.querySelector('[data-tab=mods]').click()")
+        wait_js(win, "document.querySelectorAll('#modsList .mrow, #modsList .empty').length > 0", 20)
+        time.sleep(0.8)
+        shot('62_mods')
+        js(win, "document.querySelector('[data-layer=topo]').click()")
+        print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
     if SCEN == '3d':
         js(win, "document.getElementById('q').value = 'Killington Peak'; doSearch();")
         wait_js(win, "document.querySelectorAll('.row[data-i]').length > 0", 30)
