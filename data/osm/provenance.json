@@ -1,0 +1,14 @@
+{
+  "project": "https://github.com/Ayane/skieomod",
+  "distribution": "skieo-custom-map",
+  "version": "1.29.0",
+  "license": "BSD-3-Clause",
+  "compiler_upstream_sha256": "e6f6fbc70575eed7c9627dae3798247a7a6e3d195c6d4db7a2405fb72ba6bf87",
+  "compiler_adapter_sha256": "39785753a22c491913141355765857fe57c7ef2202daae6c088702eb603437b7",
+  "catalog_upstream_sha256": "c95cdaca10f3dfb6aae5ac467a4fba51a5b1ca4e13cbae93c6ddff11a1574fb5",
+  "catalog_subset_sha256": "18017b2f2d69e96deb22041709a03039ba474f2a168ced1d037f64650aed1429",
+  "selection": "CATALOG entries with kind=lift and matching DEFAULTS objects; no values changed",
+  "compiler_changes": "Relative catalog import and local ValueError alias for ManifestError; compile_scene unchanged",
+  "catalog_observed_game_build": "25970577",
+  "catalog_observed_date": "2026-10-16"
+}

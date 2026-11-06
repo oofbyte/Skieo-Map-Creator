@@ -555,6 +555,7 @@ $('createBtn').onclick = async () => {
     name, lat: S.preview.lat, lon: S.preview.lon, size_km: S.preview.size_km, biome: $('biome').value,
     treeline_m: +$('treeline').value, snow: +$('snow').value, valley_m: +$('valley').value, max_trees: +$('trees').value,
     tree_slope: +$('slope').value, treeline_fade: +$('fade').value,
+    osm_lifts: $('osmLifts').checked, osm_pistes: $('osmPistes').checked,
     base: S.preview.base,             // flattest low ground, picked when the terrain loaded
   });
   if (!r.ok) return errorBox(r.error);
@@ -567,10 +568,23 @@ function showDone(m) {
   $('doneTitle').textContent = m.name;
   $('doneText').textContent = `Start Ski-E-O, choose New Resort and pick ${m.name} on the map list ` +
     `(with the ${m.biome_label} maps).` + (m.stats && m.stats.trees != null ? ` ${m.stats.trees.toLocaleString('en-US')} trees planted.` : '');
+  $('osmCoverageBtn').classList.toggle('hidden', !m.native_osm);
+  $('osmCoverageBtn').onclick = async () => {
+    const r = await call('osm_report', m.slug);
+    if (!r.ok) errorBox(r.error);
+  };
+  if (m.native_osm) {
+    $('doneText').textContent += ` Built into the map: ${m.native_osm.lifts} lifts and ${m.native_osm.pistes} trail segments. Start a new resort on this map. Lift supports prepare automatically after terrain is ready.`;
+    if (m.native_osm.omitted) $('doneText').textContent += ` ${m.native_osm.omitted} OSM objects were excluded. See the coverage report.`;
+  }
+  $('playBtn').onclick = async () => {
+    const r = await call('play_map', m.slug);
+    if (!r.ok) return errorBox(r.error);
+    if (r.id) startJob(r);
+  };
   $('doneBox').classList.remove('hidden');
   $('doneBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-$('playBtn').onclick = () => call('play');
 $('againBtn').onclick = () => {
   $('doneBox').classList.add('hidden');
   $('name').value = '';
@@ -648,6 +662,8 @@ function renderMaps() {
         ${badge}
         <div class="mact">
           <button class="link" data-a="show">Show</button>
+          ${m.installed && m.native_osm ? '<button class="link" data-a="play">Play</button>' : ''}
+          ${m.native_osm ? '<button class="link" data-a="coverage">OSM coverage report</button>' : ''}
           ${m.installed ? '<button class="link" data-a="uninstall">Uninstall</button>' : '<button class="link" data-a="install">Install</button>'}
           <button class="link" data-a="rebuild">Rebuild</button>
           <button class="link danger" data-a="delete">Delete</button>
@@ -661,6 +677,11 @@ function renderMaps() {
 async function mapAction(slug, a) {
   const m = S.maps.find((x) => x.slug === slug);
   if (!m || busy()) return;
+  if (a === 'coverage') {
+    const r = await call('osm_report', slug);
+    if (!r.ok) errorBox(r.error);
+    return;
+  }
   if (a === 'show') {
     S.sq.km = m.size_km; $('size').value = m.size_km;
     moveSquare(m.lat, m.lon); fitSquare();
@@ -671,8 +692,8 @@ async function mapAction(slug, a) {
   if (a === 'uninstall' && !await confirmBox('Uninstall ' + m.name + '?',
     'Resorts you started on this map will not load until you install it again. The map stays in this app.', 'Uninstall')) return;
   if (a === 'rebuild' && !await confirmBox('Rebuild ' + m.name + '?',
-    'Builds the map again for the current game version (same terrain and trees, so your resorts keep working) and installs it.', 'Rebuild', false)) return;
-  const fn = { install: 'install_map', uninstall: 'uninstall_map', rebuild: 'rebuild_map', delete: 'delete_map' }[a];
+    'Rebuilds and installs the map. OSM objects are baked into the starting state used by new resorts.', 'Rebuild', false)) return;
+  const fn = { play: 'play_map', install: 'install_map', uninstall: 'uninstall_map', rebuild: 'rebuild_map', delete: 'delete_map' }[a];
   const r = await call(fn, slug);
   if (!r.ok) return errorBox(r.error);
   startJob(r);

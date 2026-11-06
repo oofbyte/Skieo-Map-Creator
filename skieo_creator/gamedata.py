@@ -27,15 +27,16 @@ DONOR_MAP = 'Map_mad_river_glen_real'
 FILTERS = ['Maps/Generated/Map_mad_river_glen_real', 'DA_BakedObstacles_Map_mad_river_glen_real',
            'DA_BakedObstacles_Map_sugar_bowl_real.', 'DA_MapPreview_Map_mad_river_glen_real', 'H_mad_river_glen_Out',
            'IS_Map_sugar_bowl_real_tutorial', 'IS_Map_sugar_bowl_tutorial', 'DA_TreeSpecies_', 'DA_BiomeSettings_',
-           'Materials/Snow/M_Snow.']
+           'Materials/Snow/M_Snow.', 'IS_Map_Scenario_CorporateTakeover']
 REQUIRED = [C + 'Maps/Generated/%s.%s' % (DONOR_MAP, e) for e in ('umap', 'uexp', 'ubulk')] + [
     C + 'Generated/DA_BakedObstacles_%s.%s' % (DONOR_MAP, e) for e in ('uasset', 'uexp')] + [
     C + 'Generated/DA_BakedObstacles_Map_sugar_bowl_real.%s' % e for e in ('uasset', 'uexp')] + [
     C + 'Generated/DA_MapPreview_%s.%s' % (DONOR_MAP, e) for e in ('uasset', 'uexp')] + [
     C + 'Materials/Terrain/Generated/mad_river_glen/H_mad_river_glen_Out.%s' % e for e in ('uasset', 'uexp')] + [
     C + 'InitialSaves/IS_Map_sugar_bowl_real_tutorial.uexp', C + 'InitialSaves/IS_Map_sugar_bowl_tutorial.uasset',
+    C + 'InitialSaves/IS_Map_Scenario_CorporateTakeover.uexp',
     'scriptobjects.bin']
-FORMAT = 2                                   # bump when the cached layout or the checks change
+FORMAT = 5                                   # bump when the cached layout or the checks change
 NO_WINDOW = 0x08000000 if os.name == 'nt' else 0
 
 
@@ -171,6 +172,8 @@ class GameData:
                 biome_species[p.stem.replace('DA_BiomeSettings_', '')] = sorted(
                     n.replace('DA_TreeSpecies_', '') for n in names if n.startswith('DA_TreeSpecies_'))
             builder.check_templates(self.__class__._files(root))
+            from .osm.native_save import Templates
+            Templates.load((g / 'InitialSaves/IS_Map_Scenario_CorporateTakeover.uexp').read_bytes())
         except (AssertionError, ValueError, KeyError, IndexError, struct.error) as e:
             log.exception('game file check failed')
             raise GameDataError('This version of Ski-E-O changed its map format, so the creator can\'t build maps for '
@@ -218,6 +221,7 @@ class GameData:
             pv_ua=rd('Generated/DA_MapPreview_%s.uasset' % DONOR_MAP), pv_ue=rd('Generated/DA_MapPreview_%s.uexp' % DONOR_MAP),
             htx_ua=rd('Materials/Terrain/Generated/mad_river_glen/H_mad_river_glen_Out.uasset'),
             htx_ue=rd('Materials/Terrain/Generated/mad_river_glen/H_mad_river_glen_Out.uexp'),
+            scenario_ue=rd('InitialSaves/IS_Map_Scenario_CorporateTakeover.uexp'),
             is_ue=rd('InitialSaves/IS_Map_sugar_bowl_real_tutorial.uexp'),
             is_ua=rd('InitialSaves/IS_Map_sugar_bowl_tutorial.uasset'),
             scriptobjects=(Path(root) / 'scriptobjects.bin').read_bytes())

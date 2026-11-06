@@ -6,6 +6,9 @@ No game files are included: the creator reads the files it needs from your own i
 
 Software
 --------
+* SkiEO Mod 1.29.0 scene compiler and lift catalog (BSD 3-Clause) -- https://github.com/Ayane/skieomod
+  Adapted compiler imports and a lift-only catalog subset; source hashes in data/osm/provenance.json.
+  License: data/osm/LICENSE.SkiEO-Mod.txt. No runtime loader or game assets included.
 * Leaflet 1.9.4 (BSD 2-Clause) -- https://leafletjs.com -- web/vendor/leaflet/LICENSE
 * three.js r160 with OrbitControls (MIT) -- https://threejs.org -- web/vendor/three/LICENSE
 * retoc (MIT) -- https://github.com/trumank/retoc -- tools/retoc-LICENSE
@@ -13,6 +16,7 @@ Software
   Installed into the game only when a Mod Library mod is switched on and the game has no UE4SS yet.
   retoc downloads the Oodle compression library on first use.
 * pywebview (BSD 3-Clause), pythonnet (MIT), NumPy (BSD 3-Clause), Pillow (MIT-CMU), tifffile (BSD 3-Clause), Python (PSF)
+* truststore 0.10.5 (MIT) -- https://truststore.readthedocs.io -- data/licenses/truststore-LICENSE
 * Microsoft Edge WebView2 Runtime (installed on Windows; not included)
 
 Fonts (SIL Open Font License 1.1, see web/fonts/*-OFL.txt)

@@ -1,0 +1,2198 @@
+{
+  "catalog": [
+    {
+      "id": "aerial-tram",
+      "name": "Aerial Tram",
+      "class": "/Game/Blueprints/Lifts/BP_AerialTram.BP_AerialTram_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    },
+    {
+      "id": "carrier-aerial-tram-gondola",
+      "name": "Carrier Aerial Tram Gondola",
+      "class": "/Game/Blueprints/Lifts/BP_Carrier_AerialTram_Gondola.BP_Carrier_AerialTram_Gondola_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    },
+    {
+      "id": "carrier-gondola-cab",
+      "name": "Carrier Gondola Cab",
+      "class": "/Game/Blueprints/Lifts/BP_Carrier_Gondola_Cab.BP_Carrier_Gondola_Cab_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    },
+    {
+      "id": "fixed-chair1",
+      "name": "Fixed Chair1",
+      "class": "/Game/Blueprints/Lifts/BP_FixedChair1.BP_FixedChair1_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    },
+    {
+      "id": "fixed-chair2",
+      "name": "Fixed Chair2",
+      "class": "/Game/Blueprints/Lifts/BP_FixedChair2.BP_FixedChair2_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    },
+    {
+      "id": "fixed-chair4",
+      "name": "Fixed Chair4",
+      "class": "/Game/Blueprints/Lifts/BP_FixedChair4.BP_FixedChair4_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    },
+    {
+      "id": "gondola",
+      "name": "Gondola",
+      "class": "/Game/Blueprints/Lifts/BP_Gondola.BP_Gondola_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    },
+    {
+      "id": "high-speed-quad",
+      "name": "High Speed Quad",
+      "class": "/Game/Blueprints/Lifts/BP_HighSpeedQuad.BP_HighSpeedQuad_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    },
+    {
+      "id": "high-speed-six",
+      "name": "High Speed Six",
+      "class": "/Game/Blueprints/Lifts/BP_HighSpeedSix.BP_HighSpeedSix_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    },
+    {
+      "id": "lift",
+      "name": "Lift",
+      "class": "/Game/Blueprints/Lifts/BP_Lift.BP_Lift_C",
+      "kind": "lift",
+      "components": [
+        "StartTerminalMesh",
+        "EndTerminalMesh"
+      ]
+    }
+  ],
+  "defaults": {
+    "objects": [
+      {
+        "class": "/Game/Blueprints/Lifts/BP_AerialTram.BP_AerialTram_C",
+        "fields": {
+          "AccessCoverHysteresisCm": {
+            "default": 30.0,
+            "type": "number"
+          },
+          "BaseCost": {
+            "default": 5000000,
+            "type": "integer"
+          },
+          "BoardingCoverClearanceCm": {
+            "default": 150.0,
+            "type": "number"
+          },
+          "BuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "BurialSnowDepth": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "CableMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Wire_A.SM_Lift_Wire_A",
+            "type": "asset"
+          },
+          "CableTensionLengthCm": {
+            "default": 62500.0,
+            "type": "number"
+          },
+          "Capacity": {
+            "default": 100,
+            "type": "integer"
+          },
+          "CarrierClearanceMarginCm": {
+            "default": 400.0,
+            "type": "number"
+          },
+          "CatalogDailyOperatingCost": {
+            "default": 0,
+            "type": "integer"
+          },
+          "ChairAttachSocket": {
+            "default": "AttachPoint",
+            "type": "name"
+          },
+          "ChairMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_AerialTram_Gondola_A.SM_Lift_AerialTram_Gondola_A",
+            "type": "asset"
+          },
+          "CloseHour": {
+            "default": 21.0,
+            "type": "number"
+          },
+          "CrowdRadius": {
+            "default": 800.0,
+            "type": "number"
+          },
+          "Description": {
+            "default": "Large-capacity aerial tramway for long vertical rises.",
+            "type": "text"
+          },
+          "DispatchIntervalSeconds": {
+            "default": 180.0,
+            "type": "number"
+          },
+          "DisplayName": {
+            "default": "Aerial Tram",
+            "type": "text"
+          },
+          "EconomyRowName": {
+            "default": "None",
+            "type": "name"
+          },
+          "EndTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_AerialTram_Station_A.SM_Lift_AerialTram_Station_A",
+            "type": "model"
+          },
+          "HardClearance": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "InstanceName": {
+            "default": "",
+            "type": "text"
+          },
+          "LiftWheelRotationSpeed": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "LiftWheelRotation_Rotation_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "LiftWheelRotation__Direction_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0,
+            "type": "integer"
+          },
+          "LiftieStandSocketPrefix": {
+            "default": "LiftieStand",
+            "type": "name"
+          },
+          "MaxCableDeflectionDeg": {
+            "default": 8.0,
+            "type": "number"
+          },
+          "MaxLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MaxTowerSpacing": {
+            "default": 25000.0,
+            "type": "number"
+          },
+          "MinCableClearHalfWidthCm": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "MinClearance": {
+            "default": 3000.0,
+            "type": "number"
+          },
+          "MinLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MinOperatingSnowDepthCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "MinTerminalDistance": {
+            "default": 3000.0,
+            "type": "number"
+          },
+          "MinTowerSpacing": {
+            "default": 15000.0,
+            "type": "number"
+          },
+          "OpenHour": {
+            "default": 9.0,
+            "type": "number"
+          },
+          "OperatingSpeed": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "QueueRowWidthOverride": {
+            "default": 0,
+            "type": "integer"
+          },
+          "SeatSocketPrefix": {
+            "default": "Seat",
+            "type": "name"
+          },
+          "StandingSocketPrefix": {
+            "default": "Standing",
+            "type": "name"
+          },
+          "StartTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_AerialTram_Station_A.SM_Lift_AerialTram_Station_A",
+            "type": "model"
+          },
+          "TerminalDwellSeconds": {
+            "default": 20.0,
+            "type": "number"
+          },
+          "TerminalSlowFraction": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "TerminalSlowZoneLengthCm": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "TerraformBankSlopeDeg": {
+            "default": 35.0,
+            "type": "number"
+          },
+          "TerraformEdgeFalloffCm": {
+            "default": 100.0,
+            "type": "number"
+          },
+          "TerraformInteriorPaddingCm": {
+            "default": 50.0,
+            "type": "number"
+          },
+          "TerraformMaxEdgeFalloffCm": {
+            "default": 1500.0,
+            "type": "number"
+          },
+          "TerrainSnapBufferCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "TopBuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "TowerCableEntranceLeftSocket": {
+            "default": "CableEntrance_Left",
+            "type": "name"
+          },
+          "TowerCableEntranceRightSocket": {
+            "default": "CableEntrance_Right",
+            "type": "name"
+          },
+          "TowerCableExitLeftSocket": {
+            "default": "CableExit_Left",
+            "type": "name"
+          },
+          "TowerCableExitRightSocket": {
+            "default": "CableExit_Right",
+            "type": "name"
+          },
+          "TowerMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_AerialTram_Tower_A.SM_Lift_AerialTram_Tower_A",
+            "type": "asset"
+          },
+          "UnburialSnowDepth": {
+            "default": 120.0,
+            "type": "number"
+          },
+          "bAlignsToTerrainSlope": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bAllowDownloading": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bBottomQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bConformsToTerrain": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsBuried": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsPreview": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bTopQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "id": "aerial-tram",
+        "kind": "lift",
+        "name": "Aerial Tram",
+        "placeable": true
+      },
+      {
+        "class": "/Game/Blueprints/Lifts/BP_Carrier_AerialTram_Gondola.BP_Carrier_AerialTram_Gondola_C",
+        "fields": {
+          "HangerAttachSocket": {
+            "default": "HangerAttachPoint",
+            "type": "name"
+          },
+          "bHangerFollowsCable": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "id": "carrier-aerial-tram-gondola",
+        "kind": "lift",
+        "name": "Carrier Aerial Tram Gondola",
+        "placeable": false
+      },
+      {
+        "class": "/Game/Blueprints/Lifts/BP_Carrier_Gondola_Cab.BP_Carrier_Gondola_Cab_C",
+        "fields": {
+          "HangerAttachSocket": {
+            "default": "HangerAttachPoint",
+            "type": "name"
+          },
+          "bHangerFollowsCable": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "id": "carrier-gondola-cab",
+        "kind": "lift",
+        "name": "Carrier Gondola Cab",
+        "placeable": false
+      },
+      {
+        "class": "/Game/Blueprints/Lifts/BP_FixedChair1.BP_FixedChair1_C",
+        "fields": {
+          "AccessCoverHysteresisCm": {
+            "default": 30.0,
+            "type": "number"
+          },
+          "BaseCost": {
+            "default": 10000,
+            "type": "integer"
+          },
+          "BoardingCoverClearanceCm": {
+            "default": 150.0,
+            "type": "number"
+          },
+          "BuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "BurialSnowDepth": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "CableMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Wire_A.SM_Lift_Wire_A",
+            "type": "asset"
+          },
+          "CableTensionLengthCm": {
+            "default": 62500.0,
+            "type": "number"
+          },
+          "Capacity": {
+            "default": 1,
+            "type": "integer"
+          },
+          "CarrierClearanceMarginCm": {
+            "default": 400.0,
+            "type": "number"
+          },
+          "CatalogDailyOperatingCost": {
+            "default": 0,
+            "type": "integer"
+          },
+          "ChairAttachSocket": {
+            "default": "AttachPoint",
+            "type": "name"
+          },
+          "ChairMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Single_A.SM_Lift_Single_A",
+            "type": "asset"
+          },
+          "CloseHour": {
+            "default": 21.0,
+            "type": "number"
+          },
+          "CrowdRadius": {
+            "default": 800.0,
+            "type": "number"
+          },
+          "Description": {
+            "default": "Surface drag lift for beginner terrain.",
+            "type": "text"
+          },
+          "DispatchIntervalSeconds": {
+            "default": 5.0,
+            "type": "number"
+          },
+          "DisplayName": {
+            "default": "T-Bar",
+            "type": "text"
+          },
+          "EconomyRowName": {
+            "default": "OnePersonFixed",
+            "type": "name"
+          },
+          "EndTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_TBar_A.SM_Lift_TBar_A",
+            "type": "model"
+          },
+          "HardClearance": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "InstanceName": {
+            "default": "",
+            "type": "text"
+          },
+          "LiftWheelRotationSpeed": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "LiftWheelRotation_Rotation_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "LiftWheelRotation__Direction_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0,
+            "type": "integer"
+          },
+          "LiftieStandSocketPrefix": {
+            "default": "LiftieStand",
+            "type": "name"
+          },
+          "MaxCableDeflectionDeg": {
+            "default": 8.0,
+            "type": "number"
+          },
+          "MaxLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MaxTowerSpacing": {
+            "default": 5000.0,
+            "type": "number"
+          },
+          "MinCableClearHalfWidthCm": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "MinClearance": {
+            "default": 750.0,
+            "type": "number"
+          },
+          "MinLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MinOperatingSnowDepthCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "MinTerminalDistance": {
+            "default": 3000.0,
+            "type": "number"
+          },
+          "MinTowerSpacing": {
+            "default": 2500.0,
+            "type": "number"
+          },
+          "OpenHour": {
+            "default": 9.0,
+            "type": "number"
+          },
+          "OperatingSpeed": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "QueueRowWidthOverride": {
+            "default": 0,
+            "type": "integer"
+          },
+          "SeatSocketPrefix": {
+            "default": "Seat",
+            "type": "name"
+          },
+          "StandingSocketPrefix": {
+            "default": "Standing",
+            "type": "name"
+          },
+          "StartTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_TBar_A.SM_Lift_TBar_A",
+            "type": "model"
+          },
+          "TerminalDwellSeconds": {
+            "default": 20.0,
+            "type": "number"
+          },
+          "TerminalSlowFraction": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "TerminalSlowZoneLengthCm": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "TerraformBankSlopeDeg": {
+            "default": 35.0,
+            "type": "number"
+          },
+          "TerraformEdgeFalloffCm": {
+            "default": 100.0,
+            "type": "number"
+          },
+          "TerraformInteriorPaddingCm": {
+            "default": 50.0,
+            "type": "number"
+          },
+          "TerraformMaxEdgeFalloffCm": {
+            "default": 1500.0,
+            "type": "number"
+          },
+          "TerrainSnapBufferCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "TopBuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "TowerCableEntranceLeftSocket": {
+            "default": "CableEntrance_Left",
+            "type": "name"
+          },
+          "TowerCableEntranceRightSocket": {
+            "default": "CableEntrance_Right",
+            "type": "name"
+          },
+          "TowerCableExitLeftSocket": {
+            "default": "CableExit_Left",
+            "type": "name"
+          },
+          "TowerCableExitRightSocket": {
+            "default": "CableExit_Right",
+            "type": "name"
+          },
+          "TowerMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Tower_tbar_A.SM_Lift_Tower_tbar_A",
+            "type": "asset"
+          },
+          "UnburialSnowDepth": {
+            "default": 120.0,
+            "type": "number"
+          },
+          "bAlignsToTerrainSlope": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bAllowDownloading": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bBottomQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bConformsToTerrain": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsBuried": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsPreview": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bTopQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "id": "fixed-chair1",
+        "kind": "lift",
+        "name": "Fixed Chair1",
+        "placeable": true
+      },
+      {
+        "class": "/Game/Blueprints/Lifts/BP_FixedChair2.BP_FixedChair2_C",
+        "fields": {
+          "AccessCoverHysteresisCm": {
+            "default": 30.0,
+            "type": "number"
+          },
+          "BaseCost": {
+            "default": 30000,
+            "type": "integer"
+          },
+          "BoardingCoverClearanceCm": {
+            "default": 150.0,
+            "type": "number"
+          },
+          "BuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "BurialSnowDepth": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "CableMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Wire_A.SM_Lift_Wire_A",
+            "type": "asset"
+          },
+          "CableTensionLengthCm": {
+            "default": 62500.0,
+            "type": "number"
+          },
+          "Capacity": {
+            "default": 2,
+            "type": "integer"
+          },
+          "CarrierClearanceMarginCm": {
+            "default": 400.0,
+            "type": "number"
+          },
+          "CatalogDailyOperatingCost": {
+            "default": 0,
+            "type": "integer"
+          },
+          "ChairAttachSocket": {
+            "default": "AttachPoint",
+            "type": "name"
+          },
+          "ChairMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Chair_Double_A.SM_Lift_Chair_Double_A",
+            "type": "asset"
+          },
+          "CloseHour": {
+            "default": 21.0,
+            "type": "number"
+          },
+          "CrowdRadius": {
+            "default": 800.0,
+            "type": "number"
+          },
+          "Description": {
+            "default": "Classic double chairlift for beginner areas.",
+            "type": "text"
+          },
+          "DispatchIntervalSeconds": {
+            "default": 8.0,
+            "type": "number"
+          },
+          "DisplayName": {
+            "default": "2-Person Fixed Grip",
+            "type": "text"
+          },
+          "EconomyRowName": {
+            "default": "None",
+            "type": "name"
+          },
+          "EndTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Double_A.SM_Lift_Double_A",
+            "type": "model"
+          },
+          "HardClearance": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "InstanceName": {
+            "default": "",
+            "type": "text"
+          },
+          "LiftWheelRotationSpeed": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "LiftWheelRotation_Rotation_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "LiftWheelRotation__Direction_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0,
+            "type": "integer"
+          },
+          "LiftieStandSocketPrefix": {
+            "default": "LiftieStand",
+            "type": "name"
+          },
+          "MaxCableDeflectionDeg": {
+            "default": 8.0,
+            "type": "number"
+          },
+          "MaxLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MaxTowerSpacing": {
+            "default": 5000.0,
+            "type": "number"
+          },
+          "MinCableClearHalfWidthCm": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "MinClearance": {
+            "default": 600.0,
+            "type": "number"
+          },
+          "MinLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MinOperatingSnowDepthCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "MinTerminalDistance": {
+            "default": 3000.0,
+            "type": "number"
+          },
+          "MinTowerSpacing": {
+            "default": 2500.0,
+            "type": "number"
+          },
+          "OpenHour": {
+            "default": 9.0,
+            "type": "number"
+          },
+          "OperatingSpeed": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "QueueRowWidthOverride": {
+            "default": 0,
+            "type": "integer"
+          },
+          "SeatSocketPrefix": {
+            "default": "Seat",
+            "type": "name"
+          },
+          "StandingSocketPrefix": {
+            "default": "Standing",
+            "type": "name"
+          },
+          "StartTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Double_A.SM_Lift_Double_A",
+            "type": "model"
+          },
+          "TerminalDwellSeconds": {
+            "default": 20.0,
+            "type": "number"
+          },
+          "TerminalSlowFraction": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "TerminalSlowZoneLengthCm": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "TerraformBankSlopeDeg": {
+            "default": 35.0,
+            "type": "number"
+          },
+          "TerraformEdgeFalloffCm": {
+            "default": 100.0,
+            "type": "number"
+          },
+          "TerraformInteriorPaddingCm": {
+            "default": 50.0,
+            "type": "number"
+          },
+          "TerraformMaxEdgeFalloffCm": {
+            "default": 1500.0,
+            "type": "number"
+          },
+          "TerrainSnapBufferCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "TopBuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "TowerCableEntranceLeftSocket": {
+            "default": "CableEntrance_Left",
+            "type": "name"
+          },
+          "TowerCableEntranceRightSocket": {
+            "default": "CableEntrance_Right",
+            "type": "name"
+          },
+          "TowerCableExitLeftSocket": {
+            "default": "CableExit_Left",
+            "type": "name"
+          },
+          "TowerCableExitRightSocket": {
+            "default": "CableExit_Right",
+            "type": "name"
+          },
+          "TowerMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Tower_Double_A.SM_Lift_Tower_Double_A",
+            "type": "asset"
+          },
+          "UnburialSnowDepth": {
+            "default": 120.0,
+            "type": "number"
+          },
+          "bAlignsToTerrainSlope": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bAllowDownloading": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bBottomQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bConformsToTerrain": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsBuried": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsPreview": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bTopQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "id": "fixed-chair2",
+        "kind": "lift",
+        "name": "Fixed Chair2",
+        "placeable": true
+      },
+      {
+        "class": "/Game/Blueprints/Lifts/BP_FixedChair4.BP_FixedChair4_C",
+        "fields": {
+          "AccessCoverHysteresisCm": {
+            "default": 30.0,
+            "type": "number"
+          },
+          "BaseCost": {
+            "default": 75000,
+            "type": "integer"
+          },
+          "BoardingCoverClearanceCm": {
+            "default": 150.0,
+            "type": "number"
+          },
+          "BuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "BurialSnowDepth": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "CableMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Wire_A.SM_Lift_Wire_A",
+            "type": "asset"
+          },
+          "CableTensionLengthCm": {
+            "default": 62500.0,
+            "type": "number"
+          },
+          "Capacity": {
+            "default": 0,
+            "type": "integer"
+          },
+          "CarrierClearanceMarginCm": {
+            "default": 400.0,
+            "type": "number"
+          },
+          "CatalogDailyOperatingCost": {
+            "default": 0,
+            "type": "integer"
+          },
+          "ChairAttachSocket": {
+            "default": "AttachPoint",
+            "type": "name"
+          },
+          "ChairMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Chair_Quad_A.SM_Lift_Chair_Quad_A",
+            "type": "asset"
+          },
+          "CloseHour": {
+            "default": 21.0,
+            "type": "number"
+          },
+          "CrowdRadius": {
+            "default": 800.0,
+            "type": "number"
+          },
+          "Description": {
+            "default": "Standard quad chairlift for intermediate terrain.",
+            "type": "text"
+          },
+          "DispatchIntervalSeconds": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "DisplayName": {
+            "default": "4-Person Fixed Grip",
+            "type": "text"
+          },
+          "EconomyRowName": {
+            "default": "None",
+            "type": "name"
+          },
+          "EndTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_4Person_A.SM_Lift_4Person_A",
+            "type": "model"
+          },
+          "HardClearance": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "InstanceName": {
+            "default": "",
+            "type": "text"
+          },
+          "LiftWheelRotationSpeed": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "LiftWheelRotation_Rotation_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "LiftWheelRotation__Direction_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0,
+            "type": "integer"
+          },
+          "LiftieStandSocketPrefix": {
+            "default": "LiftieStand",
+            "type": "name"
+          },
+          "MaxCableDeflectionDeg": {
+            "default": 8.0,
+            "type": "number"
+          },
+          "MaxLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MaxTowerSpacing": {
+            "default": 5000.0,
+            "type": "number"
+          },
+          "MinCableClearHalfWidthCm": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "MinClearance": {
+            "default": 600.0,
+            "type": "number"
+          },
+          "MinLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MinOperatingSnowDepthCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "MinTerminalDistance": {
+            "default": 3000.0,
+            "type": "number"
+          },
+          "MinTowerSpacing": {
+            "default": 2500.0,
+            "type": "number"
+          },
+          "OpenHour": {
+            "default": 9.0,
+            "type": "number"
+          },
+          "OperatingSpeed": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "QueueRowWidthOverride": {
+            "default": 0,
+            "type": "integer"
+          },
+          "SeatSocketPrefix": {
+            "default": "Seat",
+            "type": "name"
+          },
+          "StandingSocketPrefix": {
+            "default": "Standing",
+            "type": "name"
+          },
+          "StartTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_4Person_A.SM_Lift_4Person_A",
+            "type": "model"
+          },
+          "TerminalDwellSeconds": {
+            "default": 20.0,
+            "type": "number"
+          },
+          "TerminalSlowFraction": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "TerminalSlowZoneLengthCm": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "TerraformBankSlopeDeg": {
+            "default": 35.0,
+            "type": "number"
+          },
+          "TerraformEdgeFalloffCm": {
+            "default": 100.0,
+            "type": "number"
+          },
+          "TerraformInteriorPaddingCm": {
+            "default": 50.0,
+            "type": "number"
+          },
+          "TerraformMaxEdgeFalloffCm": {
+            "default": 1500.0,
+            "type": "number"
+          },
+          "TerrainSnapBufferCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "TopBuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "TowerCableEntranceLeftSocket": {
+            "default": "CableEntrance_Left",
+            "type": "name"
+          },
+          "TowerCableEntranceRightSocket": {
+            "default": "CableEntrance_Right",
+            "type": "name"
+          },
+          "TowerCableExitLeftSocket": {
+            "default": "CableExit_Left",
+            "type": "name"
+          },
+          "TowerCableExitRightSocket": {
+            "default": "CableExit_Right",
+            "type": "name"
+          },
+          "TowerMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Tower_Quad_A.SM_Lift_Tower_Quad_A",
+            "type": "asset"
+          },
+          "UnburialSnowDepth": {
+            "default": 120.0,
+            "type": "number"
+          },
+          "bAlignsToTerrainSlope": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bAllowDownloading": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bBottomQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bConformsToTerrain": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsBuried": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsPreview": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bTopQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "id": "fixed-chair4",
+        "kind": "lift",
+        "name": "Fixed Chair4",
+        "placeable": true
+      },
+      {
+        "class": "/Game/Blueprints/Lifts/BP_Gondola.BP_Gondola_C",
+        "fields": {
+          "AccessCoverHysteresisCm": {
+            "default": 30.0,
+            "type": "number"
+          },
+          "BaseCost": {
+            "default": 1500000,
+            "type": "integer"
+          },
+          "BoardingCoverClearanceCm": {
+            "default": 150.0,
+            "type": "number"
+          },
+          "BuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "BurialSnowDepth": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "CableMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Wire_A.SM_Lift_Wire_A",
+            "type": "asset"
+          },
+          "CableTensionLengthCm": {
+            "default": 62500.0,
+            "type": "number"
+          },
+          "Capacity": {
+            "default": 8,
+            "type": "integer"
+          },
+          "CarrierClearanceMarginCm": {
+            "default": 400.0,
+            "type": "number"
+          },
+          "CatalogDailyOperatingCost": {
+            "default": 0,
+            "type": "integer"
+          },
+          "ChairAttachSocket": {
+            "default": "AttachPoint",
+            "type": "name"
+          },
+          "ChairMesh": {
+            "default": "/Game/Meshes/Lifts/sm_lift_gondola_cab.sm_lift_gondola_cab",
+            "type": "asset"
+          },
+          "CloseHour": {
+            "default": 21.0,
+            "type": "number"
+          },
+          "CrowdRadius": {
+            "default": 800.0,
+            "type": "number"
+          },
+          "Description": {
+            "default": "Enclosed cabin lift for all-weather operation.",
+            "type": "text"
+          },
+          "DispatchIntervalSeconds": {
+            "default": 12.0,
+            "type": "number"
+          },
+          "DisplayName": {
+            "default": "Gondola",
+            "type": "text"
+          },
+          "EconomyRowName": {
+            "default": "None",
+            "type": "name"
+          },
+          "EndTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/sm_lift_gondola_a.sm_lift_gondola_a",
+            "type": "model"
+          },
+          "HardClearance": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "InstanceName": {
+            "default": "",
+            "type": "text"
+          },
+          "LiftWheelRotationSpeed": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "LiftWheelRotation_Rotation_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "LiftWheelRotation__Direction_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0,
+            "type": "integer"
+          },
+          "LiftieStandSocketPrefix": {
+            "default": "LiftieStand",
+            "type": "name"
+          },
+          "MaxCableDeflectionDeg": {
+            "default": 8.0,
+            "type": "number"
+          },
+          "MaxLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MaxTowerSpacing": {
+            "default": 5000.0,
+            "type": "number"
+          },
+          "MinCableClearHalfWidthCm": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "MinClearance": {
+            "default": 1000.0,
+            "type": "number"
+          },
+          "MinLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MinOperatingSnowDepthCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "MinTerminalDistance": {
+            "default": 3000.0,
+            "type": "number"
+          },
+          "MinTowerSpacing": {
+            "default": 2500.0,
+            "type": "number"
+          },
+          "OpenHour": {
+            "default": 9.0,
+            "type": "number"
+          },
+          "OperatingSpeed": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "QueueRowWidthOverride": {
+            "default": 0,
+            "type": "integer"
+          },
+          "SeatSocketPrefix": {
+            "default": "Seat",
+            "type": "name"
+          },
+          "StandingSocketPrefix": {
+            "default": "Standing",
+            "type": "name"
+          },
+          "StartTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/sm_lift_gondola_a.sm_lift_gondola_a",
+            "type": "model"
+          },
+          "TerminalDwellSeconds": {
+            "default": 20.0,
+            "type": "number"
+          },
+          "TerminalSlowFraction": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "TerminalSlowZoneLengthCm": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "TerraformBankSlopeDeg": {
+            "default": 35.0,
+            "type": "number"
+          },
+          "TerraformEdgeFalloffCm": {
+            "default": 100.0,
+            "type": "number"
+          },
+          "TerraformInteriorPaddingCm": {
+            "default": 50.0,
+            "type": "number"
+          },
+          "TerraformMaxEdgeFalloffCm": {
+            "default": 1500.0,
+            "type": "number"
+          },
+          "TerrainSnapBufferCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "TopBuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "TowerCableEntranceLeftSocket": {
+            "default": "CableEntrance_Left",
+            "type": "name"
+          },
+          "TowerCableEntranceRightSocket": {
+            "default": "CableEntrance_Right",
+            "type": "name"
+          },
+          "TowerCableExitLeftSocket": {
+            "default": "CableExit_Left",
+            "type": "name"
+          },
+          "TowerCableExitRightSocket": {
+            "default": "CableExit_Right",
+            "type": "name"
+          },
+          "TowerMesh": {
+            "default": "/Game/Meshes/Lifts/sm_lift_tower_6person_a.sm_lift_tower_6person_a",
+            "type": "asset"
+          },
+          "UnburialSnowDepth": {
+            "default": 120.0,
+            "type": "number"
+          },
+          "bAlignsToTerrainSlope": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bAllowDownloading": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bBottomQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bConformsToTerrain": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsBuried": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsPreview": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bTopQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "id": "gondola",
+        "kind": "lift",
+        "name": "Gondola",
+        "placeable": true
+      },
+      {
+        "class": "/Game/Blueprints/Lifts/BP_HighSpeedQuad.BP_HighSpeedQuad_C",
+        "fields": {
+          "AccessCoverHysteresisCm": {
+            "default": 30.0,
+            "type": "number"
+          },
+          "BaseCost": {
+            "default": 200000,
+            "type": "integer"
+          },
+          "BoardingCoverClearanceCm": {
+            "default": 150.0,
+            "type": "number"
+          },
+          "BuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "BurialSnowDepth": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "CableMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Wire_A.SM_Lift_Wire_A",
+            "type": "asset"
+          },
+          "CableTensionLengthCm": {
+            "default": 62500.0,
+            "type": "number"
+          },
+          "Capacity": {
+            "default": 0,
+            "type": "integer"
+          },
+          "CarrierClearanceMarginCm": {
+            "default": 400.0,
+            "type": "number"
+          },
+          "CatalogDailyOperatingCost": {
+            "default": 0,
+            "type": "integer"
+          },
+          "ChairAttachSocket": {
+            "default": "AttachPoint",
+            "type": "name"
+          },
+          "ChairMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Chair_Quad_A.SM_Lift_Chair_Quad_A",
+            "type": "asset"
+          },
+          "CloseHour": {
+            "default": 21.0,
+            "type": "number"
+          },
+          "CrowdRadius": {
+            "default": 800.0,
+            "type": "number"
+          },
+          "Description": {
+            "default": "Detachable high-speed quad for major lifts.",
+            "type": "text"
+          },
+          "DispatchIntervalSeconds": {
+            "default": 6.0,
+            "type": "number"
+          },
+          "DisplayName": {
+            "default": "High-Speed Quad",
+            "type": "text"
+          },
+          "EconomyRowName": {
+            "default": "None",
+            "type": "name"
+          },
+          "EndTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Quad_A_DistTest.SM_Lift_Quad_A_DistTest",
+            "type": "model"
+          },
+          "HardClearance": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "InstanceName": {
+            "default": "",
+            "type": "text"
+          },
+          "LiftWheelRotationSpeed": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "LiftWheelRotation_Rotation_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "LiftWheelRotation__Direction_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0,
+            "type": "integer"
+          },
+          "LiftieStandSocketPrefix": {
+            "default": "LiftieStand",
+            "type": "name"
+          },
+          "MaxCableDeflectionDeg": {
+            "default": 8.0,
+            "type": "number"
+          },
+          "MaxLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MaxTowerSpacing": {
+            "default": 5000.0,
+            "type": "number"
+          },
+          "MinCableClearHalfWidthCm": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "MinClearance": {
+            "default": 600.0,
+            "type": "number"
+          },
+          "MinLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MinOperatingSnowDepthCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "MinTerminalDistance": {
+            "default": 3000.0,
+            "type": "number"
+          },
+          "MinTowerSpacing": {
+            "default": 2500.0,
+            "type": "number"
+          },
+          "OpenHour": {
+            "default": 9.0,
+            "type": "number"
+          },
+          "OperatingSpeed": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "QueueRowWidthOverride": {
+            "default": 0,
+            "type": "integer"
+          },
+          "SeatSocketPrefix": {
+            "default": "Seat",
+            "type": "name"
+          },
+          "StandingSocketPrefix": {
+            "default": "Standing",
+            "type": "name"
+          },
+          "StartTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Quad_A_DistTest.SM_Lift_Quad_A_DistTest",
+            "type": "model"
+          },
+          "TerminalDwellSeconds": {
+            "default": 20.0,
+            "type": "number"
+          },
+          "TerminalSlowFraction": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "TerminalSlowZoneLengthCm": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "TerraformBankSlopeDeg": {
+            "default": 35.0,
+            "type": "number"
+          },
+          "TerraformEdgeFalloffCm": {
+            "default": 100.0,
+            "type": "number"
+          },
+          "TerraformInteriorPaddingCm": {
+            "default": 50.0,
+            "type": "number"
+          },
+          "TerraformMaxEdgeFalloffCm": {
+            "default": 1500.0,
+            "type": "number"
+          },
+          "TerrainSnapBufferCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "TopBuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "TowerCableEntranceLeftSocket": {
+            "default": "CableEntrance_Left",
+            "type": "name"
+          },
+          "TowerCableEntranceRightSocket": {
+            "default": "CableEntrance_Right",
+            "type": "name"
+          },
+          "TowerCableExitLeftSocket": {
+            "default": "CableExit_Left",
+            "type": "name"
+          },
+          "TowerCableExitRightSocket": {
+            "default": "CableExit_Right",
+            "type": "name"
+          },
+          "TowerMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Tower_Quad_A.SM_Lift_Tower_Quad_A",
+            "type": "asset"
+          },
+          "UnburialSnowDepth": {
+            "default": 120.0,
+            "type": "number"
+          },
+          "bAlignsToTerrainSlope": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bAllowDownloading": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bBottomQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bConformsToTerrain": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsBuried": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsPreview": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bTopQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "id": "high-speed-quad",
+        "kind": "lift",
+        "name": "High Speed Quad",
+        "placeable": true
+      },
+      {
+        "class": "/Game/Blueprints/Lifts/BP_HighSpeedSix.BP_HighSpeedSix_C",
+        "fields": {
+          "AccessCoverHysteresisCm": {
+            "default": 30.0,
+            "type": "number"
+          },
+          "BaseCost": {
+            "default": 500000,
+            "type": "integer"
+          },
+          "BoardingCoverClearanceCm": {
+            "default": 150.0,
+            "type": "number"
+          },
+          "BuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "BurialSnowDepth": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "CableMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Wire_A.SM_Lift_Wire_A",
+            "type": "asset"
+          },
+          "CableTensionLengthCm": {
+            "default": 62500.0,
+            "type": "number"
+          },
+          "Capacity": {
+            "default": 6,
+            "type": "integer"
+          },
+          "CarrierClearanceMarginCm": {
+            "default": 400.0,
+            "type": "number"
+          },
+          "CatalogDailyOperatingCost": {
+            "default": 0,
+            "type": "integer"
+          },
+          "ChairAttachSocket": {
+            "default": "AttachPoint",
+            "type": "name"
+          },
+          "ChairMesh": {
+            "default": "/Game/Meshes/Lifts/sm_lift_chair_6person_a.sm_lift_chair_6person_a",
+            "type": "asset"
+          },
+          "CloseHour": {
+            "default": 21.0,
+            "type": "number"
+          },
+          "CrowdRadius": {
+            "default": 800.0,
+            "type": "number"
+          },
+          "Description": {
+            "default": "High-capacity detachable six-pack chairlift.",
+            "type": "text"
+          },
+          "DispatchIntervalSeconds": {
+            "default": 7.0,
+            "type": "number"
+          },
+          "DisplayName": {
+            "default": "High-Speed Six",
+            "type": "text"
+          },
+          "EconomyRowName": {
+            "default": "None",
+            "type": "name"
+          },
+          "EndTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/sm_lift_6person_a.sm_lift_6person_a",
+            "type": "model"
+          },
+          "HardClearance": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "InstanceName": {
+            "default": "",
+            "type": "text"
+          },
+          "LiftWheelRotationSpeed": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "LiftWheelRotation_Rotation_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "LiftWheelRotation__Direction_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0,
+            "type": "integer"
+          },
+          "LiftieStandSocketPrefix": {
+            "default": "LiftieStand",
+            "type": "name"
+          },
+          "MaxCableDeflectionDeg": {
+            "default": 8.0,
+            "type": "number"
+          },
+          "MaxLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MaxTowerSpacing": {
+            "default": 5000.0,
+            "type": "number"
+          },
+          "MinCableClearHalfWidthCm": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "MinClearance": {
+            "default": 600.0,
+            "type": "number"
+          },
+          "MinLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MinOperatingSnowDepthCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "MinTerminalDistance": {
+            "default": 3000.0,
+            "type": "number"
+          },
+          "MinTowerSpacing": {
+            "default": 2500.0,
+            "type": "number"
+          },
+          "OpenHour": {
+            "default": 9.0,
+            "type": "number"
+          },
+          "OperatingSpeed": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "QueueRowWidthOverride": {
+            "default": 0,
+            "type": "integer"
+          },
+          "SeatSocketPrefix": {
+            "default": "Seat",
+            "type": "name"
+          },
+          "StandingSocketPrefix": {
+            "default": "Standing",
+            "type": "name"
+          },
+          "StartTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/sm_lift_6person_a.sm_lift_6person_a",
+            "type": "model"
+          },
+          "TerminalDwellSeconds": {
+            "default": 20.0,
+            "type": "number"
+          },
+          "TerminalSlowFraction": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "TerminalSlowZoneLengthCm": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "TerraformBankSlopeDeg": {
+            "default": 35.0,
+            "type": "number"
+          },
+          "TerraformEdgeFalloffCm": {
+            "default": 100.0,
+            "type": "number"
+          },
+          "TerraformInteriorPaddingCm": {
+            "default": 50.0,
+            "type": "number"
+          },
+          "TerraformMaxEdgeFalloffCm": {
+            "default": 1500.0,
+            "type": "number"
+          },
+          "TerrainSnapBufferCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "TopBuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "TowerCableEntranceLeftSocket": {
+            "default": "CableEntrance_Left",
+            "type": "name"
+          },
+          "TowerCableEntranceRightSocket": {
+            "default": "CableEntrance_Right",
+            "type": "name"
+          },
+          "TowerCableExitLeftSocket": {
+            "default": "CableExit_Left",
+            "type": "name"
+          },
+          "TowerCableExitRightSocket": {
+            "default": "CableExit_Right",
+            "type": "name"
+          },
+          "TowerMesh": {
+            "default": "/Game/Meshes/Lifts/sm_lift_tower_6person_a.sm_lift_tower_6person_a",
+            "type": "asset"
+          },
+          "UnburialSnowDepth": {
+            "default": 120.0,
+            "type": "number"
+          },
+          "bAlignsToTerrainSlope": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bAllowDownloading": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bBottomQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bConformsToTerrain": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsBuried": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsPreview": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bTopQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "id": "high-speed-six",
+        "kind": "lift",
+        "name": "High Speed Six",
+        "placeable": true
+      },
+      {
+        "class": "/Game/Blueprints/Lifts/BP_Lift.BP_Lift_C",
+        "fields": {
+          "AccessCoverHysteresisCm": {
+            "default": 30.0,
+            "type": "number"
+          },
+          "BaseCost": {
+            "default": 100000,
+            "type": "integer"
+          },
+          "BoardingCoverClearanceCm": {
+            "default": 150.0,
+            "type": "number"
+          },
+          "BuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "BurialSnowDepth": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "CableMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Wire_A.SM_Lift_Wire_A",
+            "type": "asset"
+          },
+          "CableTensionLengthCm": {
+            "default": 62500.0,
+            "type": "number"
+          },
+          "Capacity": {
+            "default": 0,
+            "type": "integer"
+          },
+          "CarrierClearanceMarginCm": {
+            "default": 400.0,
+            "type": "number"
+          },
+          "CatalogDailyOperatingCost": {
+            "default": 0,
+            "type": "integer"
+          },
+          "ChairAttachSocket": {
+            "default": "AttachPoint",
+            "type": "name"
+          },
+          "ChairMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Chair_Double_A.SM_Lift_Chair_Double_A",
+            "type": "asset"
+          },
+          "CloseHour": {
+            "default": 21.0,
+            "type": "number"
+          },
+          "CrowdRadius": {
+            "default": 800.0,
+            "type": "number"
+          },
+          "Description": {
+            "default": "",
+            "type": "text"
+          },
+          "DispatchIntervalSeconds": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "DisplayName": {
+            "default": "",
+            "type": "text"
+          },
+          "EconomyRowName": {
+            "default": "None",
+            "type": "name"
+          },
+          "EndTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Double_A.SM_Lift_Double_A",
+            "type": "model"
+          },
+          "HardClearance": {
+            "default": 200.0,
+            "type": "number"
+          },
+          "InstanceName": {
+            "default": "",
+            "type": "text"
+          },
+          "LiftWheelRotationSpeed": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "LiftWheelRotation_Rotation_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "LiftWheelRotation__Direction_C0CA65CF4DFA53248A70CE882EEB5223": {
+            "default": 0,
+            "type": "integer"
+          },
+          "LiftieStandSocketPrefix": {
+            "default": "LiftieStand",
+            "type": "name"
+          },
+          "MaxCableDeflectionDeg": {
+            "default": 8.0,
+            "type": "number"
+          },
+          "MaxLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MaxTowerSpacing": {
+            "default": 5000.0,
+            "type": "number"
+          },
+          "MinCableClearHalfWidthCm": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "MinClearance": {
+            "default": 600.0,
+            "type": "number"
+          },
+          "MinLiftLength": {
+            "default": 0.0,
+            "type": "number"
+          },
+          "MinOperatingSnowDepthCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "MinTerminalDistance": {
+            "default": 3000.0,
+            "type": "number"
+          },
+          "MinTowerSpacing": {
+            "default": 2500.0,
+            "type": "number"
+          },
+          "OpenHour": {
+            "default": 9.0,
+            "type": "number"
+          },
+          "OperatingSpeed": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "QueueRowWidthOverride": {
+            "default": 0,
+            "type": "integer"
+          },
+          "SeatSocketPrefix": {
+            "default": "Seat",
+            "type": "name"
+          },
+          "StandingSocketPrefix": {
+            "default": "Standing",
+            "type": "name"
+          },
+          "StartTerminalMesh.StaticMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Double_A.SM_Lift_Double_A",
+            "type": "model"
+          },
+          "TerminalDwellSeconds": {
+            "default": 20.0,
+            "type": "number"
+          },
+          "TerminalSlowFraction": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "TerminalSlowZoneLengthCm": {
+            "default": 2000.0,
+            "type": "number"
+          },
+          "TerraformBankSlopeDeg": {
+            "default": 35.0,
+            "type": "number"
+          },
+          "TerraformEdgeFalloffCm": {
+            "default": 100.0,
+            "type": "number"
+          },
+          "TerraformInteriorPaddingCm": {
+            "default": 50.0,
+            "type": "number"
+          },
+          "TerraformMaxEdgeFalloffCm": {
+            "default": 1500.0,
+            "type": "number"
+          },
+          "TerrainSnapBufferCm": {
+            "default": 10.0,
+            "type": "number"
+          },
+          "TopBuildingRadius": {
+            "default": 500.0,
+            "type": "number"
+          },
+          "TowerCableEntranceLeftSocket": {
+            "default": "CableEntrance_Left",
+            "type": "name"
+          },
+          "TowerCableEntranceRightSocket": {
+            "default": "CableEntrance_Right",
+            "type": "name"
+          },
+          "TowerCableExitLeftSocket": {
+            "default": "CableExit_Left",
+            "type": "name"
+          },
+          "TowerCableExitRightSocket": {
+            "default": "CableExit_Right",
+            "type": "name"
+          },
+          "TowerMesh": {
+            "default": "/Game/Meshes/Lifts/SM_Lift_Tower_Double_A.SM_Lift_Tower_Double_A",
+            "type": "asset"
+          },
+          "UnburialSnowDepth": {
+            "default": 120.0,
+            "type": "number"
+          },
+          "bAlignsToTerrainSlope": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bAllowDownloading": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bBottomQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bConformsToTerrain": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsBuried": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bIsPreview": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bTopQueueLimited": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "id": "lift",
+        "kind": "lift",
+        "name": "Lift",
+        "placeable": true
+      }
+    ]
+  }
+}

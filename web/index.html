@@ -98,6 +98,12 @@
             <input type="range" id="trees" min="25000" max="7500000" step="1000" value="250000">
             <div class="meta">Set to the game's own forest density for the map's size (about 19,000 per km²: 2.7 million at 12 km, 7.5 million at 20 km), which is also the most. Fewer trees load faster and run better on slower PCs.</div>
             <div class="warn">Larger maps with many trees can take up to 10 minutes to fully load in game: the forest fills in square by square and the game runs slowly until it is done.</div>
+            <fieldset>
+              <legend>Real OpenStreetMap objects</legend>
+              <label><input type="checkbox" id="osmLifts"> Import lifts</label><br>
+              <label><input type="checkbox" id="osmPistes"> Import trails</label>
+              <p class="meta">Automatically downloads available OSM data for your selected area. Unsupported or incomplete coverage is reported after creation. Lifts and trails are built into the map’s native starting state. Start a new resort to use them.</p>
+            </fieldset>
             <details>
               <summary>More options</summary>
               <div class="row-label"><label for="valley">No trees on flat valley floor below</label><span class="numval"><input class="num-in" id="valOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="No trees on flat valley floor below" title="Type a value, then press Enter"><span class="num-unit" id="valUnit"></span></span></div>
@@ -118,6 +124,7 @@
             <img id="doneImg" alt="">
             <h3 id="doneTitle"></h3>
             <p id="doneText"></p>
+            <button class="link hidden" id="osmCoverageBtn">OSM coverage report</button>
             <div class="btn-row">
               <button class="gbtn green" id="playBtn">Play Ski-E-O</button>
             </div>

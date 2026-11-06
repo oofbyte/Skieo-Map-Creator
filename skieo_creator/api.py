@@ -380,6 +380,21 @@ class Api:
         os.startfile(GAME_URL)
 
     @_safe
+    def osm_report(self, slug):
+        rec = self._record(slug)
+        report = rec.get('native_osm') or {}
+        root = (paths.MAPS / rec['slug']).resolve()
+        file = (root / report.get('directory', '') / report.get('coverage_report', 'Reports/coverage.html')).resolve()
+        if not file.is_relative_to(root) or not file.is_file():
+            raise UserError('The OSM coverage report is unavailable.')
+        os.startfile(str(file))
+
+    @_safe
+    def play_map(self, slug):
+        self._record(slug)
+        return self.play()
+
+    @_safe
     def diagnostics(self):
         st = {}
         try:
@@ -515,7 +530,12 @@ class Api:
         if not (margin <= row <= builder.G - 1 - margin and margin <= col <= builder.G - 1 - margin):
             raise UserError('Put the base area marker inside the square (not right at its edge).')
         treeline_m = float(params.get('treeline_m', biomes.default_treeline(biome, pv['lat'])))
-        return dict(name=name, lat=pv['lat'], lon=pv['lon'], size_m=size_m, size_km=pv['size_km'], biome=biome,
+        from .osm.creator import options
+        try:
+            osm_options = options(params)
+        except ValueError as exc:
+            raise UserError(str(exc))
+        return dict(**osm_options, name=name, lat=pv['lat'], lon=pv['lon'], size_m=size_m, size_km=pv['size_km'], biome=biome,
                     treeline=float(np.clip(treeline_m, 0, 9000)), valley=float(np.clip(float(params.get('valley_m') or 0), 0, 9000)),
                     snow=float(np.clip(float(params.get('snow', 1.0)), 0.2, 3.0)),
                     max_trees=int(np.clip(int(float(params.get('max_trees') or trees.DEFAULT_TREES)), trees.MIN_TREES, trees.max_trees(pv['size_km']))),
@@ -536,6 +556,7 @@ class Api:
         slug = builder.new_slug(p['name'], taken)
         spec = dict((k, p[k]) for k in ('name', 'lat', 'lon', 'size_m', 'biome', 'treeline', 'valley', 'snow', 'max_trees',
                                         'tree_slope', 'treeline_fade', 'acres', 'base_rc', 'base_latlon', 'seed', 'tg', 'source'))
+        spec.update({k: v for k, v in p.items() if k.startswith('osm_')})
         spec['slug'] = slug
         d = self._preview['dem'] if self._preview else None
         if d is None:
@@ -553,17 +574,76 @@ class Api:
         slug = spec['slug']
         out = paths.MAPS / slug
         out.mkdir(parents=True, exist_ok=True)
-        res = builder.build(spec, d, self._gd, out, job.cancel, lambda f, t: job.progress(a + (b - a) * f, t))
+        from .osm import creator as creator_source_osm
+        from .osm.io import sha256
+        terrain = np.asarray(d)
+        if terrain.shape != (builder.G, builder.G) or not np.isfinite(terrain).all() or (terrain == -9999).any():
+            raise UserError('Invalid DEM grid: missing values are not filled.')
+        try:
+            if spec.get('osm_lifts') or spec.get('osm_pistes'):
+                from .osm.native_generation import verify
+                native_generation = verify(self._game.build, self._game.folder)
+                # Sample the exact encoded, edge-fitted grid used by this builder.
+                H, fr = builder.heights(terrain, spec['size_m'])
+                gd = self._gd.files()
+                H = builder.fit_edges(H, builder.mf.wall_stations(gd['umap'], gd['uexp']))
+                def sample_osm_height(x, y):
+                    col = (x + spec['size_m']/2) / fr.sp
+                    row = (y + spec['size_m']/2) / fr.sp
+                    if not (0 <= row <= builder.G-1 and 0 <= col <= builder.G-1):
+                        raise ValueError('OSM point is outside the native DEM')
+                    r, c = min(int(row), builder.G-2), min(int(col), builder.G-2)
+                    fy, fx = row-r, col-c
+                    value = ((1-fy)*((1-fx)*H[r,c]+fx*H[r,c+1])
+                             + fy*((1-fx)*H[r+1,c]+fx*H[r+1,c+1]))
+                    return fr.hmin + (float(value)+32768)*fr.sc
+                spec.pop('osm_initial_save', None)
+                prepared_osm = creator_source_osm.prepare_automatic(
+                    spec, builder.Names(slug).p_map, paths.APP_DIR/'osm', sample_osm_height,
+                    lambda url: net.get(url, timeout=120, retries=0, cancel=job.cancel, per_host=1),
+                    job.cancel, lambda f, t: job.progress(a + (b-a)*0.15*f, t))
+                from .osm.native_save import make_resort
+                native_resort = make_resort(prepared_osm, gd['scenario_ue'],
+                                            lambda x, y: sample_osm_height(x, y)-fr.hmin, fr.hmin, native_generation=native_generation)
+                import hashlib
+                native_resort.report['encoded_terrain_sha256'] = hashlib.sha256(H.tobytes()).hexdigest()
+                del H
+            else:
+                prepared_osm = None
+                native_resort = None
+        except (ValueError, OSError, KeyError) as exc:
+            raise UserError('OSM validation failed: ' + str(exc))
+        if prepared_osm:
+            prepared_osm['provenance']['creator_source'] = {
+                'version': VERSION, 'builder_sha256': sha256(paths.resource('skieo_creator', 'builder.py')),
+                'geo_sha256': sha256(paths.resource('skieo_creator', 'geo.py')),
+                'terrain_processing': 'Original Creator DEM resampling/filtering, height encoding and 40-vertex edge fitting retained; not a lossless DEM export',
+            }
+            native_resort.scene['provenance']['creator_source'] = prepared_osm['provenance']['creator_source']
+        res = builder.build(spec, d, self._gd, out, job.cancel, lambda f, t: job.progress(a + (b - a) * f, t), native_resort=native_resort)
+        job.cancel.check()
+        if prepared_osm:
+            job.progress(b, 'Writing native OSM starting-state report...')
+        try:
+            if native_resort and native_resort.report['lifts']:
+                from .osm import runtime as support_runtime
+                native_resort.report['runtime_initializer'] = support_runtime.build(native_resort, out, slug, self._game.folder)
+            osm_report = creator_source_osm.native_report(native_resort, out) if native_resort else None
+        except (ValueError, OSError) as exc:
+            raise UserError('OSM build failed: ' + str(exc))
         res['preview'].resize((640, 360), Image.LANCZOS).save(out / 'preview.jpg', quality=85)
         pkg_name = re.sub(r'[^A-Za-z0-9 _-]+', '', spec['name']).strip().replace(' ', '_') or slug
         man = dict(id=PREFIX + slug, name=spec['name'], version=int(spec.get('version', 1)), order=order,
                    files=res['files'], entry=res['entry'], game_build=self._game.build, format=builder.ENTRY_FORMAT,
                    creator=dict(version=VERSION, lat=spec['lat'], lon=spec['lon'], size_m=spec['size_m'], biome=spec['biome']))
         pkg = out / (pkg_name + '.skimap')
-        install.make_package(pkg, man, out)
+        install.make_package(pkg, man, out, reports=(('native-osm.json', 'resort.json', 'coverage.html', 'ATTRIBUTION.txt') +
+                 (('native-supports.skieomod',) if native_resort.report.get('runtime_initializer') else ())) if native_resort else ())
         rec = dict(slug=slug, name=spec['name'], order=order, spec=spec, stats=res['stats'], package=pkg.name,
                    files=res['files'], game_fp=self._gd.fp, game_build=self._game.build, creator=VERSION, recipe=builder.RECIPE,
                    created=datetime.datetime.now().isoformat(timespec='seconds'))
+        if osm_report:
+            rec['native_osm'] = osm_report
         paths.atomic_write(out / 'map.json', json.dumps(rec, indent=1).encode('utf-8'))
         return rec
 
@@ -577,7 +657,14 @@ class Api:
             job.state = 'running'
             job.cancel.sleep(3.0)                                  # let the game release its files
         job.progress(a + 0.02, 'Installing into Ski-E-O...')
+        if rec.get('native_osm', {}).get('runtime_initializer'):
+            from .osm import runtime as support_runtime
+            support_runtime.install(paths.MAPS / rec['slug'], rec['native_osm']['runtime_initializer'],
+                                    self._game.folder, rec['slug'], self._game.build)
         self._game.install(str(pkg), lambda t: job.progress(a + 0.05, t))
+        if rec.get('native_osm'):
+            from .osm.creator import retire_legacy_overlay
+            retire_legacy_overlay(self._game.folder, paths.MAPS / rec['slug'])
         job.progress(1.0, 'Installed')
 
     # ------------------------------------------------------------ my maps
@@ -610,10 +697,12 @@ class Api:
         installed = bool(m) and all((self._game.mods / f).is_file() for f in m['files'])
         thumb = paths.MAPS / rec['slug'] / 'preview.jpg'
         stale = bool(self._gd and rec.get('game_fp') and rec['game_fp'] != self._gd.fp) \
+            or ((rec['spec'].get('osm_lifts') or rec['spec'].get('osm_pistes')) and (rec.get('native_osm') or {}).get('version', 0) < 5) \
             or rec.get('recipe', 1) < builder.RECIPE                # made by an older creator: rebuild for its fixes
         s = rec['spec']
         return dict(slug=rec['slug'], name=rec['name'], created=rec.get('created'), installed=installed, stale=stale,
                     lat=s['lat'], lon=s['lon'], size_km=s['size_m'] / 1000.0, biome=s['biome'],
+                    native_osm=rec.get('native_osm'),
                     biome_label=biomes.BIOMES.get(s['biome'], {}).get('label', s['biome']), stats=rec.get('stats', {}),
                     thumb=_data_url(Image.open(thumb), 'JPEG', 80) if thumb.is_file() else None)
 
@@ -645,6 +734,8 @@ class Api:
         def work(job):
             job.progress(0.2, 'Removing %s from the game...' % rec['name'])
             self._game.uninstall(PREFIX + slug, lambda t: job.progress(0.5, t))
+            from .osm import runtime as support_runtime
+            support_runtime.uninstall(self._game.folder, slug)
             return self._map_view(rec)
         return self._run('uninstall', work)
 
@@ -659,6 +750,8 @@ class Api:
             if PREFIX + slug in self._game.installed():
                 job.progress(0.3, 'Removing %s from the game...' % rec['name'])
                 self._game.uninstall(PREFIX + slug, lambda t: job.progress(0.6, t))
+            from .osm import runtime as support_runtime
+            support_runtime.uninstall(self._game.folder, slug)
             shutil.rmtree(paths.MAPS / slug, ignore_errors=True)
             return dict(slug=slug, deleted=True)
         return self._run('delete', work)

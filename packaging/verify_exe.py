@@ -17,10 +17,13 @@ from pathlib import Path
 from PyInstaller.archive.readers import CArchiveReader
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIRS = ('web', 'data', 'tools')
+DATA_DIRS = ('web', 'data', 'tools', 'share')
+PROVENANCE_SOURCES = ('skieo_creator/builder.py', 'skieo_creator/geo.py')
 
 
 def source_path(name):
+    if name.startswith('share/skieomod/'):
+        return Path(sys.prefix) / name
     if name == 'THIRD-PARTY.txt':
         return ROOT / 'packaging' / 'THIRD-PARTY.txt'
     return ROOT / name
@@ -45,14 +48,15 @@ def main():
     bad = []
 
     # bundled files
-    bundled = {n for n in toc if n.split('/')[0] in DATA_DIRS or n == 'THIRD-PARTY.txt'}
+    bundled = {n for n in toc if n.split('/')[0] in DATA_DIRS or n == 'THIRD-PARTY.txt' or n in PROVENANCE_SOURCES}
     for n in sorted(bundled):
         p = source_path(n)
         if not p.is_file():
             bad.append('in the exe but not in the source: ' + n)
         elif car.extract(toc[n][0]) != p.read_bytes():
             bad.append('different from the source: ' + n)
-    here = {p.relative_to(ROOT).as_posix() for d in DATA_DIRS for p in (ROOT / d).rglob('*') if p.is_file()}
+    here = {p.relative_to(Path(sys.prefix) if d == 'share' else ROOT).as_posix() for d in DATA_DIRS for p in (Path(sys.prefix).joinpath('share', 'skieomod') if d == 'share' else ROOT / d).rglob('*') if p.is_file()}
+    here.update(PROVENANCE_SOURCES)
     for n in sorted(here - bundled):
         bad.append('in the source but not in the exe: ' + n)
     print('bundled files checked: %d' % len(bundled))

@@ -3,3 +3,9 @@ numpy==2.5.4
 pillow==13.0.0
 tifffile==2026.10.15
 pyinstaller==6.22.3
+
+# Official runtime package validation and UE4SS bootstrap resources.
+skieo-custom-map==1.29.0
+
+# Windows CryptoAPI certificate-chain validation, matching the official SDK.
+truststore==0.10.5; sys_platform == "win32"
