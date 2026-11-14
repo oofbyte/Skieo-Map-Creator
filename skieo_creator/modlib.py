@@ -5,11 +5,11 @@
   installed from data/ue4ss only when the game doesn't have it yet; a marker file records that the app put it there,
   and it is removed again when the last of the app's Lua mods is switched off. A UE4SS the player installed is never
   touched, except for our own mod folders and their mods.txt lines.
-- 'pak': cooked content (the R2 lifts). Its zip ships inside the app (data/lifts) and its .pak/.ucas/.utoc go into
+- 'pak': cooked content (the R2 lifts, the alpine buildings). Its zip ships inside the app (data/lifts) and its .pak/.ucas/.utoc go into
   Content/Paks/~mods. Switching off deletes them.
 
-The lift packs share the build menu: each carries the same composite DT_BuildingEconomy over a copy of the game's own
-building table (DT_BuildingStock_0) and one small table for its lift (lift-models/game/dt_modular.py). That copy is from
+The packs share the build menu: each carries the same composite DT_BuildingEconomy over a copy of the game's own
+building table (DT_BuildingStock_0) and one small table per pack (lift-models/game/dt_modular.py). That copy is from
 the game version the pack was built for, so after a game update it would hide the new buildings (and undo changed
 ones). refresh() therefore rebuilds it from the player's own game files into STOCK_PAK, which the game mounts above
 the packs (a ..._<n>_P pak gets a higher order than a plain ..._P one), and brings installed packs up to the app's.
@@ -33,17 +33,23 @@ MODS = {
                          'force the weather and change the climate (buried in snow? turn snowfall down), max out '
                          'your reputation to unlock everything, spawn guests, switch off accidents, breakdowns and '
                          'tired staff, and build anywhere.'),
-    'r2six': dict(kind='pak', name='Doppelmayr D-Line R2 Six', pak='ZZZ_DoppelmayrR2Six_P',
+    'r2six': dict(kind='pak', name='Doppelmayr D-Line R2 Six', pak='ZZZ_DoppelmayrR2Six_P', lift=True,
                   zip='DLine_R2_Six_LiftMod.zip',
                   about='New lift in the build menu: D-Line R2 glass station, six-seat bubble chairs, Doppelmayr '
                         'towers. Costs and unlocks like the High-Speed Six (Elite Resort).'),
-    'r2gondola': dict(kind='pak', name='Doppelmayr D-Line R2 Gondola', pak='ZZZ_DoppelmayrR2Gondola_P',
+    'r2gondola': dict(kind='pak', name='Doppelmayr D-Line R2 Gondola', pak='ZZZ_DoppelmayrR2Gondola_P', lift=True,
                       zip='DLine_R2_Gondola_LiftMod.zip',
                       about='New lift in the build menu: D-Line R2 gondola station with Omega V cabins. '
                             'Costs and unlocks like the Gondola (World-Class).'),
+    'buildings': dict(kind='pak', name="Oof's Alpine Buildings", pak='ZZZ_AlpineBuildings_P',
+                      zip='Alpine_Buildings_Pack.zip',
+                      about='50 new buildings in the build menu, all made for this pack: timber-frame mountain homes, '
+                            'log cabins, A-frames, Swiss chalets, townhouses, modern villas and hotels, inns, grand lodges '
+                            'and two giants. Each one works and unlocks like the stock Cabin, Grand Lodge or Hotel it is '
+                            'based on; bigger ones cost more and hold more guests.'),
 }
 PAK_EXTS = ('.pak', '.ucas', '.utoc')
-OWN_LIFT_MOD = 'ZZZ_LiftMod_P.pak'          # the mod author's all-in-one lift pack already contains both R2 lifts
+OWN_LIFT_MOD = 'ZZZ_LiftMod_P.pak'          # the mod author's all-in-one lift pack already contains both R2 lifts ('lift')
 MARKER = 'installed-by-skieo-map-creator.txt'
 LEGACY_LUA = {'SkiWeather': 'cheats'}       # Lua mods of older app versions -> the mod that replaced them
 STOCK_PAK = 'ZZZ_LiftStock_9_P'             # the player's own building table for the lift packs (see above)
@@ -97,7 +103,7 @@ def status(game_folder):
     mods = []
     for k, m in MODS.items():
         d = dict(id=k, name=m['name'], kind=m['kind'], about=m['about'], on=_is_on(game_folder, m),
-                 key=m.get('key'), included=m['kind'] == 'pak' and own_lifts)
+                 key=m.get('key'), included=m.get('lift', False) and own_lifts)
         mods.append(d)
     return dict(ue4ss=(b / 'dwmapi.dll').is_file(), ours=(b / 'ue4ss' / MARKER).is_file(), mods=mods)
 

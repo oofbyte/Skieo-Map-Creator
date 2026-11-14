@@ -9,6 +9,8 @@ usage: python tests/ui_drive.py <out dir> <scenario>
              units    -- yearly snowfall next to the multiplier, the ft | m switch
              treecap  -- the tree slider follows the map size (5M typed at 20 km, then 12 / 3 / 20 / 8 km, a moved square)
              bigtrees -- 20 km map with the most trees the slider allows: create and install (Ski-E-O must be closed)
+             mods     -- Mod Library: switch on the pack named by env MOD (default 'buildings') with its real switch
+                         (Ski-E-O must be closed)
   Set LOCALAPPDATA to a scratch folder to keep the test away from a creator that is running for real.
 """
 import ctypes
@@ -352,6 +354,21 @@ def drive(win):
         js(win, "document.querySelector('[data-tab=maps]').click()")
         time.sleep(1.5)
         shot('55_maps')
+        print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
+    if SCEN == 'mods':
+        sel = "document.querySelector('#modsList .mrow[data-mod=%s] .switch input')" % json.dumps(os.environ.get('MOD', 'buildings'))
+        js(win, "document.getElementById('modsBtn').click()")
+        wait_js(win, "document.querySelectorAll('#modsList .mrow, #modsList .empty').length > 0", 60)
+        time.sleep(0.8)
+        shot('70_mods')
+        if not js(win, sel + '.checked'):
+            js(win, "(function (i) { i.checked = true; i.dispatchEvent(new Event('change')); })(%s)" % sel)
+            wait_js(win, "(function (i) { return i && i.checked && !i.disabled; })(%s)" % sel, 300)
+            time.sleep(0.8)
+            shot('71_mods_on')
+        print('mods', js(win, "JSON.stringify([].map.call(document.querySelectorAll('#modsList .mrow'), function (r) { "
+                              "return [r.dataset.mod, r.querySelector('.switch input').checked, r.querySelector('.badge').textContent]; }))"),
+              flush=True)
         print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
     time.sleep(0.5)
     win.destroy()

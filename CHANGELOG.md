@@ -2,6 +2,21 @@
 
 Maps made with an older version show **Rebuild recommended** in My Maps: one click on Rebuild gives them the fixes.
 
+## v1.5.0
+- **Oof's Alpine Buildings** (Mod Library): 50 new buildings in the build menu (under Comfort), all made from scratch
+  for the pack out of the game's own materials (wood, stone, metal roofs, windows that light up at night):
+  - **Two giants**: the Grand Summit Lodge (a glazed great hall between two stone chimneys, cross-gabled timber wings,
+    a trussed porte-cochere) and the Grand Alpine Palace Hotel (green copper roofs, turrets, a grand portico).
+  - **Timber-frame mountain homes**: walkout homes with covered decks and stone chimneys through glazed gables, homes
+    with heavy-truss porticos on river-rock columns and rusty shed awnings.
+  - **Log cabins, A-frames, Swiss chalets, a guesthouse and townhouses.**
+  - **Modern**: villas, and hotels and apartment houses with larch balconies and dark metal top floors.
+  - **Inns, grand lodges, hotels and three lakeside estates.**
+  Homes work like the Cabin, the big ones like the Grand Lodge or the Hotel: same unlock and upkeep, more to build the
+  bigger they are, and room for more guests.
+- The R2 lift packs and the buildings pack share the build menu: switch on any of them and you get all of their
+  content.
+
 ## v1.4.0
 - **Full game**: works with **Ski-E-O! Ski Resort Tycoon** on Steam, finds it by itself, and Play starts it. The demo
   is no longer supported (its game files are encrypted since its last update). Maps made with an older version
