@@ -22,7 +22,7 @@ from PIL import Image
 from . import APP_NAME, VERSION, biomes, builder, dem, gamedata, geo, install, modlib, net, paths, server, trees
 
 log = logging.getLogger(__name__)
-GAME_URL = 'steam://rungameid/5012760'
+GAME_URL = 'steam://rungameid/' + install.APP_ID
 LINKS = {
     'osm': 'https://www.openstreetmap.org/copyright',
     'otm': 'https://opentopomap.org/about',
@@ -193,22 +193,8 @@ class Api:
     def _find_game(self):
         f = self._settings.get('game_folder')
         if f and install.is_valid_game(f):
-            build = None
-            for line in self._appmanifest(f):
-                p = [x for x in line.strip().split('"') if x.strip()]
-                if len(p) == 2 and p[0] == 'buildid':
-                    build = p[1]
-            return f, build
+            return f, install.manifest(f).get('buildid')
         return install.find_game()
-
-    @staticmethod
-    def _appmanifest(folder):
-        acf = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(folder))), 'appmanifest_%s.acf' % install.APP_ID)
-        try:
-            with open(acf, encoding='utf-8', errors='replace') as fh:
-                return fh.read().splitlines()
-        except OSError:
-            return []
 
     def _game_status(self):
         folder, build = self._find_game()
@@ -222,7 +208,10 @@ class Api:
         if self._gd is None or self._gd.fp != gamedata.game_fingerprint(folder):
             self._gd = gamedata.GameData(folder)
         install.raise_tree_limit(folder)
-        return dict(found=True, folder=str(folder), build=build, running=install.game_running(), ready=self._gd.ready())
+        running = install.game_running()
+        if not running:
+            modlib.refresh(folder)                      # lift packs: keep their building table in step with the game
+        return dict(found=True, folder=str(folder), build=build, running=running, ready=self._gd.ready())
 
     @_safe
     def game_status(self):
@@ -235,6 +224,9 @@ class Api:
             return dict(game=self._game_status(), changed=False)
         p = r[0] if isinstance(r, (list, tuple)) else r
         for cand in (p, os.path.dirname(p), os.path.dirname(os.path.dirname(p))):
+            if install.is_demo(cand):
+                raise UserError('That is the Ski-E-O demo. The Map Creator works with the full game (Ski-E-O! Ski '
+                                'Resort Tycoon) only.')
             if install.is_valid_game(cand):
                 self._settings.set(game_folder=str(cand))
                 return dict(game=self._game_status(), changed=True)

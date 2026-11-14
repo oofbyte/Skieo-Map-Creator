@@ -1,4 +1,4 @@
--- SkiWeather: live weather controls for Ski-E-O! (UE4SS Lua mod). F9 opens / closes the panel.
+-- SkiWeather: live weather controls for Ski-E-O! (UE4SS Lua mod). F6 opens / closes the panel (F9 is the game's Report a Bug).
 -- Snowfall, storms and temperature scale the map biome's monthly climate table (BiomeSettings.MonthlyClimate:
 -- SnowfallRateMultiplier, StormModifier, BaseTemperatureC per month), which the weather simulation reads as it runs.
 -- The stock values are remembered and every change is applied to them, so 1x / 0 degrees is the unmodded game.
@@ -126,7 +126,7 @@ local function build(pc)
 
   local head = hrow(box)
   hadd(head, text("WEATHER CONTROLS", 13, { R = 0.95, G = 0.80, B = 0.25, A = 1 }, true), 1)
-  local hint = text("F9", 9, C.dim); hint:SetJustification(2); hadd(head, hint, 0.2)
+  local hint = text("F6", 9, C.dim); hint:SetJustification(2); hadd(head, hint, 0.2)
   label(box, "now", "Load a resort to use these controls.")
 
   section(box, "WEATHER NOW")
@@ -151,7 +151,7 @@ local function build(pc)
     S.snow, S.storms, S.temp = 1, 1, 0; apply()
     P.rebuild = true
   end)
-  button(r, "Close  (F9)", C.red, function() P.open = false; P.widget:SetVisibility(1) end)
+  button(r, "Close  (F6)", C.red, function() P.open = false; P.widget:SetVisibility(1) end)
 
   w:SetVisibility(4)
   w:AddToViewport(901)
@@ -214,10 +214,10 @@ local function guarded(name, fn)
     if not ok then print("[SkiWeather] " .. name .. ": " .. tostring(err) .. "\n") end
   end
 end
-local pc, F9 = nil, { KeyName = FName("F9") }
-LoopInGameThreadAfterFrames(2, guarded("input", function()      -- ~30 Hz: F9 + panel input
+local pc, F6 = nil, { KeyName = FName("F6") }
+LoopInGameThreadAfterFrames(1, guarded("input", function()      -- every frame: "just pressed" lasts one frame
   if not (pc and pc:IsValid()) then pc = FindFirstOf("PlayerController"); if not (pc and pc:IsValid()) then return end end
-  if pc:WasInputKeyJustPressed(F9) then toggle(pc) end
+  if pc:WasInputKeyJustPressed(F6) then toggle(pc) end
   if P.open and P.widget and P.widget:IsValid() then poll() end
 end))
 local tick = 0
@@ -227,6 +227,6 @@ LoopInGameThreadAfterFrames(30, guarded("climate", function()   -- ~2 Hz: keep t
   if P.open then refresh() end
 end))
 
-print("[SkiWeather] loaded - F9 opens the weather controls\n")
+print("[SkiWeather] loaded - F6 opens the weather controls\n")
 
 return { toggle = toggle, apply = apply, S = S, P = P }   -- for scripted tests; UE4SS ignores it

@@ -8,29 +8,45 @@
 - 'pak': cooked content (the R2 lifts). Its zip ships inside the app (data/lifts) and its .pak/.ucas/.utoc go into
   Content/Paks/~mods. Switching off deletes them.
 
+The lift packs share the build menu: each carries the same composite DT_BuildingEconomy over a copy of the game's own
+building table (DT_BuildingStock_0) and one small table for its lift (lift-models/game/dt_modular.py). That copy is from
+the game version the pack was built for, so after a game update it would hide the new buildings (and undo changed
+ones). refresh() therefore rebuilds it from the player's own game files into STOCK_PAK, which the game mounts above
+the packs (a ..._<n>_P pak gets a higher order than a plain ..._P one), and brings installed packs up to the app's.
+
 The game must be closed (it locks dwmapi.dll and the paks)."""
+import json
+import logging
 import shutil
+import tempfile
 import zipfile
 from pathlib import Path
 
-from . import paths
+from . import install, paths
+from .engine import legacy_header as lh
+
+log = logging.getLogger(__name__)
 
 MODS = {
-    'weather': dict(kind='lua', folder='SkiWeather', name='Weather Controls', key='F9',
+    'weather': dict(kind='lua', folder='SkiWeather', name='Weather Controls', key='F6',
                     about='Live weather panel in game: force sunny / snowing / blizzard, and turn snowfall, storms and '
                           'temperature up or down. Fixes resorts getting buried in snow.'),
     'r2six': dict(kind='pak', name='Doppelmayr D-Line R2 Six', pak='ZZZ_DoppelmayrR2Six_P',
                   zip='DLine_R2_Six_LiftMod.zip',
                   about='New lift in the build menu: D-Line R2 glass station, six-seat bubble chairs, Doppelmayr '
-                        'towers. Unlocked from level 1.'),
+                        'towers. Costs and unlocks like the High-Speed Six (Elite Resort).'),
     'r2gondola': dict(kind='pak', name='Doppelmayr D-Line R2 Gondola', pak='ZZZ_DoppelmayrR2Gondola_P',
                       zip='DLine_R2_Gondola_LiftMod.zip',
                       about='New lift in the build menu: D-Line R2 gondola station with Omega V cabins. '
-                            'Unlocked from level 1.'),
+                            'Costs and unlocks like the Gondola (World-Class).'),
 }
 PAK_EXTS = ('.pak', '.ucas', '.utoc')
 OWN_LIFT_MOD = 'ZZZ_LiftMod_P.pak'          # the mod author's all-in-one lift pack already contains both R2 lifts
 MARKER = 'installed-by-skieo-map-creator.txt'
+STOCK_PAK = 'ZZZ_LiftStock_9_P'             # the player's own building table for the lift packs (see above)
+STOCK_TABLE = 'DT_BuildingStock_0'          # same length as DT_BuildingEconomy: a rename in place
+STOCK_STAMP = 'skieo_lift_stock.json'       # in ~mods: the game files STOCK_PAK was made from
+STOCK_FORMAT = 1
 
 
 def _bin(game_folder):
@@ -124,4 +140,94 @@ def set_mod(game_folder, mod_id, on):
         _set_lua(game_folder, m, on)
     else:
         _set_pak(game_folder, m, on)
+        refresh(game_folder)
     return status(game_folder)
+
+
+# ---------------------------------------------------------------- lift packs vs game updates
+
+_refreshed = set()      # states already handled in this run
+
+
+def _game_stamp(game_folder):
+    paks = Path(game_folder) / 'SkiResortSimulator' / 'Content' / 'Paks'
+    return [STOCK_FORMAT] + sorted([f.name, f.stat().st_size, f.stat().st_mtime_ns]
+                                   for f in paks.glob('SkiResortSimulator-*.utoc'))
+
+
+def _state(game_folder):
+    mods = _mods_dir(game_folder)
+    files = [mods / (m['pak'] + '.utoc') for m in MODS.values() if m['kind'] == 'pak'] + [mods / (STOCK_PAK + '.utoc')]
+    return (str(game_folder), json.dumps(_game_stamp(game_folder)),
+            tuple((f.stat().st_size, f.stat().st_mtime_ns) if f.is_file() else None for f in files))
+
+
+def _outdated(game_folder, m):
+    with zipfile.ZipFile(paths.resource('data', 'lifts', m['zip'])) as z:
+        shipped = z.read(next(n for n in z.namelist() if Path(n).name == m['pak'] + '.utoc'))
+    return shipped != (_mods_dir(game_folder) / (m['pak'] + '.utoc')).read_bytes()     # the toc hashes every chunk
+
+
+def _build_stock(game_folder):
+    sim = Path(game_folder) / 'SkiResortSimulator'
+    work = Path(tempfile.mkdtemp(prefix='.skilift_', dir=sim))
+    try:
+        ua, ue, so = install.extract_data_asset(sim / 'Content' / 'Paks', work, 'DT_BuildingEconomy', 'building list')
+        old, new = '/Game/Data/DT_BuildingEconomy', '/Game/Data/' + STOCK_TABLE
+        ua, _, _ = lh.edit(ua, rename={old: new, 'DT_BuildingEconomy': STOCK_TABLE})
+        ua = lh.rename_package_string(ua, old, new)
+        legacy = work / 'legacy'
+        d = legacy / 'SkiResortSimulator' / 'Content' / 'Data'
+        d.mkdir(parents=True)
+        (d / (STOCK_TABLE + '.uasset')).write_bytes(ua)
+        (d / (STOCK_TABLE + '.uexp')).write_bytes(ue)
+        (legacy / 'scriptobjects.bin').write_bytes(so)
+        out = work / 'out'
+        out.mkdir()
+        install.run_retoc(['to-zen', '--version', install.ENGINE, str(legacy), str(out / (STOCK_PAK + '.utoc'))])
+        for e in PAK_EXTS:
+            paths.atomic_write(_mods_dir(game_folder) / (STOCK_PAK + e), (out / (STOCK_PAK + e)).read_bytes())
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def refresh(game_folder):
+    """Game closed: updates switched-on mods to the app's versions and keeps STOCK_PAK in step with the game
+    (made when missing or when the game files changed; removed with the last pack). Never raises: on failure the packs
+    keep using their own copy, and it is tried again when the game or the packs change, or in the next run."""
+    key = None
+    try:
+        key = _state(game_folder)
+        if key in _refreshed:
+            return
+        b = _bin(game_folder)
+        for m in MODS.values():                         # Lua mods from an older app version (the weather key was F9,
+            if m['kind'] == 'lua' and _lua_on(b, m['folder']):      # the full game's Report a Bug key)
+                inst = b / 'ue4ss' / 'Mods' / m['folder'] / 'Scripts' / 'main.lua'
+                if inst.read_bytes() != paths.resource('data', 'mods', m['folder'], 'Scripts', 'main.lua').read_bytes():
+                    log.info('%s: updating to the version in the app', m['folder'])
+                    _set_lua(game_folder, m, True)
+        mods = _mods_dir(game_folder)
+        on = [m for m in MODS.values() if m['kind'] == 'pak' and _pak_on(game_folder, m)]
+        if not on:
+            for e in PAK_EXTS:
+                (mods / (STOCK_PAK + e)).unlink(missing_ok=True)
+            (mods / STOCK_STAMP).unlink(missing_ok=True)
+        else:
+            for m in on:
+                if _outdated(game_folder, m):
+                    log.info('%s: updating to the version in the app', m['pak'])
+                    _set_pak(game_folder, m, True)
+            stamp = _game_stamp(game_folder)
+            try:
+                made_from = json.loads((mods / STOCK_STAMP).read_text(encoding='utf-8'))
+            except (OSError, ValueError):
+                made_from = None
+            if made_from != stamp or not all((mods / (STOCK_PAK + e)).is_file() for e in PAK_EXTS):
+                _build_stock(game_folder)
+                (mods / STOCK_STAMP).write_text(json.dumps(stamp), encoding='utf-8')
+                log.info('lift packs: building table rebuilt from the game files %s', stamp)
+        _refreshed.add(_state(game_folder))
+    except Exception as e:                              # never let this break the app
+        log.warning('lift packs: could not refresh: %s', e)
+        _refreshed.add(key)

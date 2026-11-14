@@ -25,7 +25,8 @@ from .engine import levelentry as le
 
 log = logging.getLogger(__name__)
 
-APP_ID = '5012760'
+APP_ID = '4493130'          # Ski-E-O! Ski Resort Tycoon
+DEMO_APP_ID = '5012760'     # not supported: the demo's game files are encrypted since its November update
 FORMAT = 1
 FORMATS = (1, 2, 3)    # 2 = the package adds a new map entry ('append'), which installers before 2 can't do;
                        # 3 = entries are found by map key (registry layout of game build 25996759 and later)
@@ -65,37 +66,51 @@ def steam_roots():
     return roots
 
 
+def _acf(path):
+    """key -> value of a Steam app manifest ({} when there is none)"""
+    info = {}
+    try:
+        text = Path(path).read_text(encoding='utf-8', errors='replace')
+    except OSError:
+        return info
+    for line in text.splitlines():
+        parts = [p for p in line.strip().split('"') if p.strip()]
+        if len(parts) == 2:
+            info.setdefault(parts[0], parts[1])
+    return info
+
+
 def find_game():
     """Returns (game folder, Steam build id) or (None, None)."""
-    libs = []
+    seen = set()
     for root in steam_roots():
         vdf = root / 'steamapps' / 'libraryfolders.vdf'
-        if vdf.is_file():
-            libs += _vdf_paths(vdf.read_text(encoding='utf-8', errors='replace'))
-        libs.append(root)
-    seen = set()
-    for lib in libs:
-        key = str(lib).lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        acf = lib / 'steamapps' / ('appmanifest_%s.acf' % APP_ID)
-        if not acf.is_file():
-            continue
-        info = {}
-        for line in acf.read_text(encoding='utf-8', errors='replace').splitlines():
-            parts = [p for p in line.strip().split('"') if p.strip()]
-            if len(parts) == 2:
-                info.setdefault(parts[0], parts[1])
-        game = lib / 'steamapps' / 'common' / info.get('installdir', 'skieogame_demo')
-        if (game / 'SkiResortSimulator' / 'Content' / 'Paks').is_dir():
-            return game, info.get('buildid')
+        found = _vdf_paths(vdf.read_text(encoding='utf-8', errors='replace')) if vdf.is_file() else []
+        for lib in found + [root]:
+            if str(lib).lower() in seen:
+                continue
+            seen.add(str(lib).lower())
+            info = _acf(lib / 'steamapps' / ('appmanifest_%s.acf' % APP_ID))
+            game = lib / 'steamapps' / 'common' / info.get('installdir', '')
+            if info.get('installdir') and (game / 'SkiResortSimulator' / 'Content' / 'Paks').is_dir():
+                return game, info.get('buildid')
     return None, None
+
+
+def manifest(game, app=APP_ID):
+    """Steam's app manifest of `app` when it is the game in this folder, else {}"""
+    folder = Path(game).resolve()
+    info = _acf(folder.parent.parent / ('appmanifest_%s.acf' % app))
+    return info if info.get('installdir', '').lower() == folder.name.lower() else {}
+
+
+def is_demo(game):
+    return bool(manifest(game, DEMO_APP_ID)) or Path(game).name.lower() == 'skieogame_demo'
 
 
 def is_valid_game(game):
     p = Path(game) / 'SkiResortSimulator' / 'Content' / 'Paks'
-    return (p / 'global.utoc').is_file() and any(p.glob('SkiResortSimulator-*.utoc'))
+    return (p / 'global.utoc').is_file() and any(p.glob('SkiResortSimulator-*.utoc')) and not is_demo(game)
 
 
 GAME_EXE = 'skieogame.exe'
@@ -152,8 +167,9 @@ def game_running():
 # ensure(RecordCount <= UObstacleDataManager::MaxBakedTrees) and rejects the whole blob. That compare is the only use
 # of the constant (the tree arrays follow the record count), so its immediate is raised in skieogame.exe.
 TREE_LIMIT = 20000000
-# cmp esi, imm32 ; jbe ok ; mov eax,1 ; lea rdx,[the "... records, over the bake cap" message]
-_TREE_CHECK = re.compile(rb'\x81\xFE(....)\x76.\xB8\x01\x00\x00\x00\x48\x8D\x15', re.S)
+# cmp r32, imm32 ; jbe ok (short in the demo, near in the full game) ... lea rdx, [the "... over the bake cap" message]
+_TREE_CHECK = re.compile(rb'\x81[\xF8-\xFF](....)(?:\x76.|\x0F\x86....)', re.S)
+_LEA_RDX = re.compile(rb'\x48\x8D\x15(....)', re.S)
 _tree_limit_seen = {}
 
 
@@ -170,7 +186,8 @@ def _tree_check_at(data):
         return None
     msg = rva(msg)
     hits = [m for m in _TREE_CHECK.finditer(data)
-            if 0 <= msg - (rva(m.end()) + 4 + struct.unpack_from('<i', data, m.end())[0]) < 128]
+            if any(0 <= msg - (rva(l.end()) + struct.unpack_from('<i', data, l.start(1))[0]) < 128
+                   for l in _LEA_RDX.finditer(data, m.end(), m.end() + 0x60))]
     return hits[0].start(1) if len(hits) == 1 else None
 
 
@@ -308,7 +325,7 @@ class Game:
         try:
             ua, ue, so = extract_registry(self.paks, work)
             for m in maps:
-                ua, ue = apply_entry(ua, ue, m['entry'])
+                ua, ue = apply_entry(ua, ue, real_size(m['entry']))
             legacy = work / 'legacy'
             d = legacy / 'SkiResortSimulator' / 'Content' / 'Data'
             d.mkdir(parents=True)
@@ -340,7 +357,12 @@ def run_retoc(args):
 
 
 def extract_registry(paks, work):
-    """The game's original DA_LevelRegistry (uasset, uexp) and script objects, read from its own containers.
+    """The game's original DA_LevelRegistry (uasset, uexp) and script objects, read from its own containers."""
+    return extract_data_asset(paks, work, 'DA_LevelRegistry', 'map list')
+
+
+def extract_data_asset(paks, work, name, what):
+    """(uasset, uexp, script objects) of Content/Data/<name> as the game itself has it (not a mod's copy).
     retoc wants the base container and global.utoc in one folder without ~mods, so hard links are made next to them."""
     src = work / 'in'
     src.mkdir()
@@ -351,13 +373,13 @@ def extract_registry(paks, work):
             except OSError as e:
                 raise InstallError('Could not read the game files (%s).' % e)
     out = work / 'base'
-    run_retoc(['to-legacy', '--no-shaders', '--filter', 'DA_LevelRegistry', str(src), str(out)])
+    run_retoc(['to-legacy', '--no-shaders', '--filter', name, str(src), str(out)])
     d = out / 'SkiResortSimulator' / 'Content' / 'Data'
     try:
-        return ((d / 'DA_LevelRegistry.uasset').read_bytes(), (d / 'DA_LevelRegistry.uexp').read_bytes(),
+        return ((d / (name + '.uasset')).read_bytes(), (d / (name + '.uexp')).read_bytes(),
                 (out / 'scriptobjects.bin').read_bytes())
     except OSError:
-        raise InstallError('The game\'s map list could not be read -- the game may have changed.')
+        raise InstallError('The game\'s %s could not be read -- the game may have changed.' % what)
 
 
 # ---------------------------------------------------------------- registry entries
@@ -406,12 +428,21 @@ def import_index(ua, object_name):
     raise InstallError('"%s" not found in the game\'s map list -- the game may have changed.' % object_name)
 
 
+def real_size(spec):
+    """Custom maps are real size only, also ones packaged by older versions: no Diorama variant (Map size in Advanced
+    options), which would be the copied entry's -- another resort's tabletop map."""
+    keep = [i for i in spec['set'] if i[0] not in ('DioramaVariantMap', 'DioramaTutorialInitialSave')]
+    return dict(spec, add_names=spec['add_names'] + ['None'],
+                set=keep + [['DioramaVariantMap', 'ref', 'None', 'None'], ['DioramaTutorialInitialSave', 'remove']])
+
+
 def apply_entry(ua, ue, spec):
     """Point one menu slot of the registry at a custom map, or add a new entry for it.
     spec: slot (existing entry to take over) | append (existing entry to copy as a new one, placed after the last
           entry of the same biome), add_names, initial_save ({package, object} -> new imports | {copy: [slot, field]}),
           set: [[field, kind, ...]]"""
-    ua2, _, names = lh.edit(ua, add=spec['add_names'])
+    have = set(lh.parse(ua)[1])
+    ua2, _, names = lh.edit(ua, add=[n for n in dict.fromkeys(spec['add_names']) if n not in have])
     ix = names.index
     n_imp = lh.parse(ua2)[0]['imports_count'][1]
     isv = spec['initial_save']

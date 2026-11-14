@@ -52,7 +52,8 @@ ENTRY_FORMAT = 3
 #   5 (1.1.3): rock texture 3x larger (MATERIAL_OVERRIDES): no repeating stripes on big rock faces
 #   6 (1.1.5): full forest right up to the tree slope (no thinning before it)
 #   7 (1.1.6): the terrain textures' grid scale is the map's own (was the donor's: wrong lighting, lines at tile borders)
-RECIPE = 7
+#   8 (1.4.0): for the full game; real size only (no Diorama variant in the map list)
+RECIPE = 8
 BUILD_LOCK = threading.Lock()                     # frame.py holds the map frame globally: one build at a time
 
 
@@ -497,7 +498,10 @@ def entry_spec(names, display, biome, stats):
             'add_names': [names.p_map, names.mapn, names.p_pre, prev, names.p_is, names.is_new],
             'initial_save': {'package': names.p_is, 'object': names.is_new},
             'set': [['Map', 'ref', names.p_map, names.mapn], ['MapPreview', 'ref', names.p_pre, prev],
-                    ['TutorialInitialSave', 'initial_save'], ['bIsTutorialMap', 'hex', '01'], ['bLocked', 'remove'],
+                    ['TutorialInitialSave', 'initial_save'], ['bIsTutorialMap', 'hex', '01'],
+                    # custom maps are real size only: no tabletop variant for Map size "Diorama" (Advanced options;
+                    # the template's would be Soda Springs')
+                    ['DioramaVariantMap', 'ref', 'None', 'None'], ['DioramaTutorialInitialSave', 'remove'],
                     ['DisplayName', 'text', display], ['BiomeSettings', 'import', 'DA_BiomeSettings_' + biome]]
             + typed(stats)}
 
