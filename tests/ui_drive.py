@@ -12,7 +12,8 @@ usage: python tests/ui_drive.py <out dir> <scenario>
              mods     -- Mod Library: switch on the pack named by env MOD (default 'buildings') with its real switch
                          (Ski-E-O must be closed)
              osm      -- real trails and lifts: search env OSM_Q (default 'Beaver Creek'; OSM_KM size, OSM_AT "lat,lon"
-                         centre), load terrain, switch the OpenStreetMap option on, show the lines and the lift list;
+                         centre), load terrain, switch the OpenStreetMap option on, show the lines and the lift list,
+                         the satellite view (glades left out in grey) and with env OSM_LOOK "lat,lon,zoom" a close look;
                          with env OSM_NAME also create and install the map (Ski-E-O must be closed)
   Set LOCALAPPDATA to a scratch folder to keep the test away from a creator that is running for real.
 """
@@ -386,6 +387,14 @@ def drive(win):
         js(win, "map.setZoom(map.getZoom() + 1.5); 0")
         time.sleep(3)
         shot('a4_zoom')
+        js(win, "document.querySelector('.hud-btn[data-layer=sat]').click(); 0")      # glades: grey on the satellite view
+        time.sleep(4)
+        shot('a4b_satellite')
+        if os.environ.get('OSM_LOOK'):                             # "lat,lon,zoom": a close look
+            la, lo, z = os.environ['OSM_LOOK'].split(',')
+            js(win, "map.setView([%s, %s], %s); 0" % (float(la), float(lo), float(z)))
+            time.sleep(5)
+            shot('a4c_look')
         if os.environ.get('OSM_NAME'):                             # create and install it (Ski-E-O must be closed)
             js(win, "var n = document.getElementById('name'); n.value = %s; n.dispatchEvent(new Event('input'));"
                     % json.dumps(os.environ['OSM_NAME']))

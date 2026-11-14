@@ -2,6 +2,16 @@
 
 Maps made with an older version show **Rebuild recommended** in My Maps: one click on Rebuild gives them the fixes.
 
+## v1.6.1
+- **Real trails and lifts leave out glades** (skiing through the trees). The game has no tree skiing yet: a glade
+  became a bare clearing, or a big empty patch where it was mapped as an area. Left out:
+  - runs marked as glades in OpenStreetMap (gladed=yes, or "Glade" in the name),
+  - and runs that go through the trees with no cleared corridor, from satellite tree heights (Meta / WRI canopy
+    height map). A run mapped a little beside its clearing still counts as cleared, and green runs and roads (cat
+    tracks under the trees) are always kept.
+  The map shows the glades left out as grey dotted lines, so you can check them with the Satellite view.
+- Maps made with the real trails and lifts in 1.6.0 show **Rebuild recommended**: rebuild them to clear out the glades.
+
 ## v1.6.0
 - **Real trails and lifts** (new switch under Your resort): builds the real ski area into the map from
   OpenStreetMap, so a **New Game** on it starts with the resort already there:

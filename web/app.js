@@ -399,6 +399,11 @@ function showOsm(r) {
       return L.polyline(x.pts, { color: '#c0392b', weight: 3, dashArray: '7 4' })
         .bindTooltip(`${esc(x.name)}<br>${esc(x.game)}`, { sticky: true });
     }
+    if (x.kind === 'glade') {                              // left out: shown so the satellite view can be checked
+      const st = { color: '#959ba4', weight: 3, opacity: 0.95, dashArray: '9 6' };
+      return (x.closed ? L.polygon(x.pts, { ...st, fillOpacity: 0.05 }) : L.polyline(x.pts, st))
+        .bindTooltip(`${esc(x.name)}<br>Glade: left out`, { sticky: true });
+    }
     const st = { color: DIFF_COLOR[x.difficulty], weight: 2.5, opacity: 0.9, dashArray: x.difficulty === 'Pro' ? '2 5' : null };
     return (x.kind === 'bowl' ? L.polygon(x.pts, { ...st, fillOpacity: 0.12 }) : L.polyline(x.pts, st))
       .bindTooltip(esc(x.name), { sticky: true });
@@ -413,7 +418,8 @@ function showOsm(r) {
       s.lift_list.map((l) => `<label><input type="checkbox" data-id="${l.id}" checked><b>${esc(l.name)}</b>` +
         `<span>${esc(l.real)} → ${esc(l.game)} · $${l.upkeep.toLocaleString('en-US')}/night</span></label>`).join('') +
       '</div></details><div class="meta" id="osmCost"></div>' : '') +
-    (skipped.length ? `<div class="meta">Left out: ${skipped.map(([k, v]) => `${esc(k)} (${v})`).join(', ')}.</div>` : '');
+    (skipped.length ? `<div class="meta">Left out: ${skipped.map(([k, v]) => `${esc(k)} (${v})`).join(', ')}.</div>` : '') +
+    (s.notes || []).map((n) => `<div class="meta">${esc(n)}</div>`).join('');
   $('osmInfo').querySelectorAll('.osm-list input').forEach((c) => {
     c.onchange = () => { if (c.checked) S.osmSkip.delete(+c.dataset.id); else S.osmSkip.add(+c.dataset.id); osmCost(); };
   });

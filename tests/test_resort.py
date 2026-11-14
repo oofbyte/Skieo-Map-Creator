@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from skieo_creator import builder, resort  # noqa: E402
+from skieo_creator import builder, net, resort  # noqa: E402
 
 # ---- lift types: the real lift -> the closest stock lift
 R = resort.lift_row
@@ -100,4 +100,59 @@ try:
 except ValueError:
     pass
 assert resort._complete(b'{"elements": []}')
+
+# ---- glades: left out when tagged or named so, or when the run goes through the trees with no cleared corridor
+G_ = resort._gladed
+assert G_({'gladed': 'yes'}) and G_({'name': 'Lower Slalom Glade'}) and G_({'piste:name': 'Tea Cup Glades'})
+assert G_({'name': 'Sous-bois du Nord'}) and G_({'natural': 'wood', 'area': 'yes'})
+assert G_({'gladed': 'no', 'name': 'Jade Glade'}) is False
+assert G_({'name': 'Everglades'}) is None and G_({'name': 'Black Forest'}) is None and G_({}) is None
+for i, (x, y) in {30: (2600, 1000), 31: (2600, 2500), 32: (3000, 1000), 33: (3000, 2500),
+                  40: (1200, 1500), 41: (1500, 1500), 42: (1500, 1800), 43: (1200, 1800),
+                  50: (3400, 2600), 51: (3400, 3300), 60: (600, 2000), 61: (900, 2000), 62: (900, 2300), 63: (600, 2300),
+                  70: (3600, 600), 71: (3600, 1400), 72: (3800, 600), 73: (3800, 1400)}.items():
+    node(i, x, y)
+pistes = osm['elements'][len(osm['elements']) - 2:]
+osm3 = {'elements': list(nodes.values()) + pistes + [
+    dict(type='way', id=600, nodes=[30, 31], tags={'piste:type': 'downhill', 'name': 'Tree Run', 'piste:difficulty': 'advanced'}),
+    dict(type='way', id=601, nodes=[32, 33], tags={'piste:type': 'downhill', 'name': 'Green Path', 'piste:difficulty': 'novice'}),
+    dict(type='way', id=602, nodes=[40, 41, 42, 43, 40], tags={'piste:type': 'downhill', 'name': 'Tree Bowl',
+                                                               'piste:difficulty': 'expert'}),
+    dict(type='way', id=603, nodes=[50, 51], tags={'piste:type': 'downhill', 'name': 'Moon Dance', 'gladed': 'yes'}),
+    dict(type='way', id=604, nodes=[60, 61, 62, 63, 60], tags={'piste:type': 'downhill', 'name': 'Moon Dance'}),
+    dict(type='way', id=605, nodes=[70, 71], tags={'piste:type': 'downhill', 'name': 'Star Dust', 'highway': 'track',
+                                                   'piste:difficulty': 'intermediate'}),     # a road: kept
+    dict(type='way', id=606, nodes=[72, 73], tags={'piste:type': 'downhill', 'name': 'Star Dust', 'gladed': 'yes'}),
+]}
+
+
+def woods(la, lo):
+    """trees 20 m tall everywhere but a cleared strip 4-16 m east of Long Run's line (drawn a little off its run)"""
+    x, y = terrain.xy(la, lo)
+    line_x = 1800 + (np.clip(y, 900, 3100) - 900) * 40 / 2200
+    return np.where((x > line_x + 4) & (x < line_x + 16), 0, 20).astype(np.uint8)
+
+
+pl3 = resort.plan(osm3, terrain, canopy=woods)
+kept, gone = {t['name'] for t in pl3['trails']}, {g['name'] for g in pl3['glades']}
+assert {'Long Run', 'Green Path', 'Star Dust'} <= kept and not kept & {'Tree Run', 'Tree Bowl', 'Moon Dance'}, kept
+assert [t['road'] for t in pl3['trails'] if t['name'] == 'Star Dust'] == [True]      # a road named like a glade
+assert gone == {'Tree Run', 'Tree Bowl', 'Moon Dance', 'Star Dust'}, gone
+assert pl3['skipped'][resort.GLADE] == 4 and sum(o['kind'] == 'glade' for o in resort.overlay(pl3, terrain)) == 5
+tagged_only = resort.plan(osm3, terrain)                 # no satellite check: only the marked glades, and their areas
+assert {t['name'] for t in tagged_only['trails']} >= {'Tree Run', 'Tree Bowl', 'Long Run', 'Star Dust'}
+assert not tagged_only['notes']
+assert {g['name'] for g in tagged_only['glades']} == {'Moon Dance', 'Star Dust'} and len(tagged_only['glades']) == 3
+assert tagged_only['skipped'][resort.GLADE] == 2
+
+
+def offline(la, lo):
+    raise net.NetError('Could not download from example (timed out). Check your internet connection and try again.')
+
+
+pl4 = resort.plan(osm3, terrain, canopy=offline)
+assert 'Tree Run' in {t['name'] for t in pl4['trails']} and len(pl4['notes']) == 1, pl4['notes']
+assert (pl3['tree_check'], tagged_only['tree_check'], pl4['tree_check']) == (True, None, False)
+assert builder.recipe({'osm': True}, dict(tree_check=False)) < builder.recipe({'osm': True})    # asks to be rebuilt
+assert resort.chm._quadkey(304, 375) == '0302330222'     # the canopy file over Stratton (zoom-10 tile 304, 375)
 print('resort: all checks passed')

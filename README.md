@@ -32,7 +32,8 @@ built or uploaded by hand. Three ways to check one:
    source, and lists everything else inside (Python and the libraries in `requirements.txt`).
 
 What the app connects to: map tiles (OpenStreetMap, OpenTopoMap), place search (Photon, Nominatim), elevation
-data (USGS 3DEP, AWS Terrain Tiles) and, with **Real trails and lifts** on, the OpenStreetMap ski data (Overpass API). retoc downloads the Oodle compression library on first use. No accounts, no
+data (USGS 3DEP, AWS Terrain Tiles) and, with **Real trails and lifts** on, the OpenStreetMap ski data (Overpass API)
+and tree canopy heights (Meta / WRI, AWS Open Data). retoc downloads the Oodle compression library on first use. No accounts, no
 telemetry. It writes to `%LOCALAPPDATA%\SkiEO Map Creator` and the game's `Content\Paks\~mods` folder, never to
 saves.
 
@@ -55,7 +56,8 @@ saves.
    - **Real trails and lifts** (optional, `resort.py`): the ski area's OpenStreetMap lifts and pistes become the
      game's own lift and trail records in the starting save (read and written with `engine/gvas_tree.py`, record
      layouts from `data/resort_templates.bin`), the forest leaves their corridors clear, and the map list entry's
-     `InitialSave` makes New Game start from that save.
+     `InitialSave` makes New Game start from that save. Glades are left out: the ones OSM marks, and runs under tree
+     canopy with no cleared corridor in the satellite canopy heights (`canopy.py`).
 4. **Pack and install**: retoc `to-zen` packs a `ZZZ_MC_<name>_P` pak. `install.py` adds the map to the game's
    map list (`ZZZ_Registry_P`) and copies it into `Content/Paks/~mods`.
 

@@ -19,7 +19,7 @@ import webbrowser
 import numpy as np
 from PIL import Image
 
-from . import APP_NAME, VERSION, biomes, builder, dem, gamedata, geo, install, modlib, net, paths, resort, server, trees
+from . import APP_NAME, VERSION, biomes, builder, canopy, dem, gamedata, geo, install, modlib, net, paths, resort, server, trees
 
 log = logging.getLogger(__name__)
 GAME_URL = 'steam://rungameid/' + install.APP_ID
@@ -31,6 +31,7 @@ LINKS = {
     'photon': 'https://photon.komoot.io/',
     'usgs': 'https://www.usgs.gov/3d-elevation-program',
     'terrain': 'https://registry.opendata.aws/terrain-tiles/',
+    'chm': 'https://registry.opendata.aws/dataforgood-fb-forests/',
     'leaflet': 'https://leafletjs.com/',
 }
 PHOTON = 'https://photon.komoot.io/api/?limit=12&q='
@@ -438,12 +439,15 @@ class Api:
         return resort.Terrain(H, fr, pv['lat'], pv['lon'], size_m)
 
     def _do_osm(self, job, pv):
-        raw = resort.fetch(pv['lat'], pv['lon'], pv['size_km'] * 1000.0, job.cancel, lambda f, t: job.progress(0.8 * f, t))
-        job.progress(0.85, 'Fitting the trails and lifts to the terrain...')
+        raw = resort.fetch(pv['lat'], pv['lon'], pv['size_km'] * 1000.0, job.cancel, lambda f, t: job.progress(0.7 * f, t))
+        job.progress(0.75, 'Fitting the trails and lifts to the terrain...')
         terrain = self._osm_terrain(pv)
-        pl = resort.plan(json.loads(raw), terrain)
+        pl = resort.plan(json.loads(raw), terrain, canopy=lambda la, lo: canopy.heights(
+            la, lo, job.cancel, lambda f, t: job.progress(0.75 + 0.2 * f, t)))
         if not pl['lifts'] and not pl['trails']:
-            raise UserError('OpenStreetMap has no ski trails or lifts inside this square.')
+            raise UserError('The trails in this square are all glades (skiing through the trees), which the game doesn\'t '
+                            'have yet, and there are no lifts.' if pl['glades'] else
+                            'OpenStreetMap has no ski trails or lifts inside this square.')
         pv['osm'] = raw
         return dict(summary=resort.summary(pl), lines=resort.overlay(pl, terrain))
 
@@ -589,7 +593,7 @@ class Api:
         pkg = out / (pkg_name + '.skimap')
         install.make_package(pkg, man, out)
         rec = dict(slug=slug, name=spec['name'], order=order, spec=spec, stats=res['stats'], package=pkg.name,
-                   files=res['files'], game_fp=self._gd.fp, game_build=self._game.build, creator=VERSION, recipe=builder.RECIPE,
+                   files=res['files'], game_fp=self._gd.fp, game_build=self._game.build, creator=VERSION, recipe=builder.recipe(spec, res['stats']),
                    created=datetime.datetime.now().isoformat(timespec='seconds'))
         paths.atomic_write(out / 'map.json', json.dumps(rec, indent=1).encode('utf-8'))
         return rec
@@ -637,7 +641,7 @@ class Api:
         installed = bool(m) and all((self._game.mods / f).is_file() for f in m['files'])
         thumb = paths.MAPS / rec['slug'] / 'preview.jpg'
         stale = bool(self._gd and rec.get('game_fp') and rec['game_fp'] != self._gd.fp) \
-            or rec.get('recipe', 1) < builder.RECIPE                # made by an older creator: rebuild for its fixes
+            or rec.get('recipe', 1) < builder.recipe(rec['spec'])     # made by an older creator: rebuild for its fixes
         s = rec['spec']
         return dict(slug=rec['slug'], name=rec['name'], created=rec.get('created'), installed=installed, stale=stale,
                     lat=s['lat'], lon=s['lon'], size_km=s['size_m'] / 1000.0, biome=s['biome'],

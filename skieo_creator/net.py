@@ -80,11 +80,15 @@ def _pooled(parts, headers, timeout, cancel):
         try:
             conn.request('GET', path, headers=headers)
             r = conn.getresponse()
-        except (http.client.RemoteDisconnected, ConnectionResetError, BrokenPipeError, http.client.CannotSendRequest):
+        except (http.client.RemoteDisconnected, ConnectionResetError, ConnectionAbortedError, BrokenPipeError,
+                http.client.CannotSendRequest):
             conn.close()                                           # the server dropped the idle connection
             conn = http.client.HTTPSConnection(host, parts.port or 443, timeout=timeout, context=_ssl)
             conn.request('GET', path, headers=headers)
             r = conn.getresponse()
+        ok = 206 if 'Range' in headers else 200
+        if r.status in (200, 206) and r.status != ok:      # the whole file where a part was asked for: don't read it
+            raise _HTTPStatus(r.status, 'instead of %d' % ok)
         chunks = []
         while True:
             cancel.check()
@@ -92,7 +96,7 @@ def _pooled(parts, headers, timeout, cancel):
             if not b:
                 break
             chunks.append(b)
-        if r.status != 200:
+        if r.status != ok:
             raise _HTTPStatus(r.status, r.reason)
         if r.will_close:
             conn.close()
@@ -106,11 +110,14 @@ def _pooled(parts, headers, timeout, cancel):
             conn.close()
 
 
-def get(url, timeout=60, retries=4, cancel=NEVER, accept=None, per_host=4, not_found_ok=False):
-    """GET url -> bytes. 404 returns None when not_found_ok. Raises NetError with a readable message."""
+def get(url, timeout=60, retries=4, cancel=NEVER, accept=None, per_host=4, not_found_ok=False, byte_range=None):
+    """GET url -> bytes. 404 returns None when not_found_ok. byte_range=(first, last): only those bytes (206).
+    Raises NetError with a readable message."""
     parts = urllib.parse.urlsplit(url)
     host = parts.hostname or ''
     headers = {'User-Agent': USER_AGENT, 'Accept': accept or '*/*', 'Accept-Encoding': 'identity'}
+    if byte_range:
+        headers['Range'] = 'bytes=%d-%d' % tuple(byte_range)
     direct = parts.scheme == 'https' and not urllib.request.getproxies()
     last = None
     for attempt in range(retries + 1):
@@ -121,6 +128,8 @@ def get(url, timeout=60, retries=4, cancel=NEVER, accept=None, per_host=4, not_f
                 if direct:
                     return _pooled(parts, headers, timeout, cancel)
                 with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout) as r:
+                    if byte_range and r.status != 206:
+                        raise _HTTPStatus(r.status, 'instead of 206')
                     chunks = []
                     while True:
                         cancel.check()
@@ -135,7 +144,7 @@ def get(url, timeout=60, retries=4, cancel=NEVER, accept=None, per_host=4, not_f
             if e.code == 404 and not_found_ok:
                 return None
             last = 'the server answered %d %s' % (e.code, e.reason)
-            if e.code in (400, 401, 403, 404, 410):
+            if e.code in (200, 206, 400, 401, 403, 404, 410):
                 break
         except (urllib.error.URLError, socket.timeout, ConnectionError, OSError, http.client.HTTPException) as e:
             last = str(getattr(e, 'reason', e) or type(e).__name__)

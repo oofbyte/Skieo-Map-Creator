@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 
-from . import gamedata, resort, shells, trees
+from . import canopy, gamedata, resort, shells, trees
 from .engine import collision_write as cw
 from .engine import component_bounds as cb
 from .engine import frame as FR
@@ -55,7 +55,16 @@ ENTRY_FORMAT = 3
 #   7 (1.1.6): the terrain textures' grid scale is the map's own (was the donor's: wrong lighting, lines at tile borders)
 #   8 (1.4.0): for the full game; real size only (no Diorama variant in the map list)
 RECIPE = 8
+RECIPE_OSM = 9                                    # with the real trails and lifts: 9 (1.6.1) without the glades
 BUILD_LOCK = threading.Lock()                     # frame.py holds the map frame globally: one build at a time
+
+
+def recipe(spec, stats=None):
+    """the recipe a map is built to; an OSM map built without the satellite tree check (download failed) gets one less,
+    so it shows "Rebuild recommended" """
+    if not spec.get('osm'):
+        return RECIPE
+    return RECIPE_OSM - (1 if stats and stats.get('tree_check') is False else 0)
 
 
 class BuildError(Exception):
@@ -540,7 +549,10 @@ def _build(spec, dem, game, out_dir, cancel, progress):
         except (OSError, ValueError):
             raise BuildError('This map\'s trail and lift data is missing. Create the map again.')
         terrain = resort.Terrain(H, fr, spec['lat'], spec['lon'], spec['size_m'])
-        pl = resort.plan(osm, terrain, skip=spec.get('osm_skip', ()))
+        pl = resort.plan(osm, terrain, skip=spec.get('osm_skip', ()), canopy=lambda la, lo: canopy.heights(
+            la, lo, cancel, lambda f, t: progress(0.01, t)))      # the same blocks the preview read: cached
+        for n in pl['notes']:
+            log.warning('%s', n)
         clear = resort.clear_mask(pl, spec['size_m'])
         idx = np.minimum((np.arange(G) * fr.sp / clear[1]).astype(int), clear[0].shape[0] - 1)
         avoid = clear[0][np.ix_(idx, idx)]
@@ -626,4 +638,5 @@ def _build(spec, dem, game, out_dir, cancel, progress):
     return dict(files=produced, entry=entry_spec(names, spec['name'], spec['biome'], stats, start_save=bool(pl)), preview=img,
                 stats=dict(peak_ft=peak_ft, vert_ft=vert_ft, base_ft=int(round(base_m * 3.28084)),
                            trees=len(recs) // trees.STRIDE, species=counts, base_rc=[row, col], snow_piles=bool(shell),
-                           lifts=len(pl['lifts']) if pl else 0, trails=len(pl['trails']) if pl else 0))
+                           lifts=len(pl['lifts']) if pl else 0, trails=len(pl['trails']) if pl else 0,
+                           glades=pl['skipped'].get(resort.GLADE, 0) if pl else 0, tree_check=pl['tree_check'] if pl else None))

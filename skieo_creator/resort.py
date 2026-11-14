@@ -13,6 +13,9 @@ records, so a new game on the map starts with the real resort already built:
              quadratic curves (~100 m each) along the piste; piste areas become bowls
   trees   -> none on the trails or under the lifts (clear_mask() for the forest), and the game's cleared zones in the
              save, as the game writes them when a trail or lift is built
+  glades  -> left out (the game has no tree skiing: a glade would become a bare clearing): pistes tagged or named as
+             glades, and runs that go through the trees with no cleared corridor in the satellite canopy heights
+             (canopy.py), checked along the best smooth path near the OSM line, as it is often drawn a little off
 The rules (tower spacing, bowl centre and radius, zones, hours) were read off saves the game wrote. The record layouts
 come from data/resort_templates.bin (packaging/make_resort_templates.py): the game's starting save has no lift or trail.
 """
@@ -28,6 +31,7 @@ from collections import Counter, defaultdict
 import numpy as np
 from PIL import Image, ImageDraw
 
+from . import canopy as chm
 from . import geo, net, paths
 from .engine import gvas_tree as G
 
@@ -80,6 +84,16 @@ STATION_M = 120.0                               # an OSM station this close to a
 HUB_M = 150.0                                   # terminals this close share a hub (the game: 106 m and 110 m seen)
 OFFICE_HUB_M = 200.0                            # ... and with the ticket office (184 m seen)
 OPEN_HOURS = (9.0, 21.0)                        # what the current game version gives new lifts
+# glades. The satellite thresholds were set on Stratton, Vail, Beaver Creek and Breckenridge against their gladed=yes
+# runs and close-up looks at the imagery: the tree runs found are 0.32-0.90 under trees; cleared runs, even narrow or
+# drawn 15 m off, stay under 0.25 (green runs and roads are left alone: there, crowns over a narrow track read as trees)
+GLADE_NAME = re.compile(r'\bglade[sd]?\b|\bsous[- ]bois\b', re.I)
+GLADE = 'tree-skiing glade'
+TREE_M = 5                                      # canopy at least this tall (m) is trees
+GLADE_STEP = 5.0                                # along the line (m)
+GLADE_OFFSETS = np.arange(-15.0, 15.01, 2.5)    # how far beside its OSM line a cleared run is looked for (m)
+GLADE_SHARE = 0.3                               # a run under trees for this share of its best path is a glade
+GLADE_COVER = 0.35                              # a piste area with this share of tree canopy is a glade
 
 
 class ResortError(Exception):
@@ -291,9 +305,11 @@ def upkeep(l):
     return int(LIFTS[l['row']][3] * (len(l['towers']) + 4) / 8.0 + 0.5)        # halves up, like the game
 
 
-def plan(osm, terrain, skip=()):
-    """OSM data -> dict(lifts, trails, hubs, skipped): positions in corner metres / world cm, ready for the save.
-    skip: OSM ids of lifts to leave out (the player's choice)"""
+def plan(osm, terrain, skip=(), canopy=None):
+    """OSM data -> dict(lifts, trails, hubs, skipped, glades, notes, tree_check): positions in corner metres / world
+    cm, ready for the save. skip: OSM ids of lifts to leave out (the player's choice). canopy: lat, lon -> tree heights
+    (m), to find the glades OSM doesn't mark (canopy.heights); without it (tree_check None) or when it fails
+    (tree_check False, with a note) only the marked ones are left out"""
     nodes, ways, rels = read(osm)
     europe = -25.0 <= terrain.grid.lon0 <= 45.0 and terrain.grid.lat0 >= 34.0
     skipped = Counter()
@@ -378,7 +394,7 @@ def plan(osm, terrain, skip=()):
         for m in r.get('members', ()):
             if m.get('type') == 'way':
                 rel_tags.setdefault(m['ref'], r.get('tags', {}))
-    lines, areas = [], []
+    lines, areas, glades, notes = [], [], [], []
     for wid, (ids, t) in ways.items():
         rt = rel_tags.get(wid, {})
         if t.get('piste:type') != 'downhill' and rt.get('piste:type') != 'downhill':
@@ -388,41 +404,124 @@ def plan(osm, terrain, skip=()):
         name = _trail_name(t) or _trail_name(rt)
         diff = DIFFICULTY.get(str(t.get('piste:difficulty') or rt.get('piste:difficulty') or '').strip().lower())
         tags = dict(rt, **t)
+        closed = len(ids) > 3 and ids[0] == ids[-1] and t.get('area') != 'no'
+        if _gladed(tags):
+            glades.append(dict(name=name, closed=closed, P=poly(ids)))
+            continue
         if tags.get('piste:grooming') == 'backcountry' and not diff:
             skipped['backcountry route without a grade'] += 1
             continue
-        w = dict(osm=wid, ids=ids, name=name, diff=diff, tags=tags)
-        (areas if len(ids) > 3 and ids[0] == ids[-1] and t.get('area') != 'no' else lines).append(w)
+        (areas if closed else lines).append(dict(osm=wid, ids=ids, name=name, diff=diff, tags=tags))
     for r in rels:                                     # piste areas mapped as multipolygons: one area per outer ring
         t = r.get('tags', {})
         if t.get('type') != 'multipolygon' or t.get('piste:type') != 'downhill':
             continue
         diff = DIFFICULTY.get(str(t.get('piste:difficulty') or '').strip().lower())
+        rings = _rings([m['ref'] for m in r.get('members', ()) if m.get('type') == 'way' and m.get('role', '') in ('outer', '')], ways)
+        if _gladed(t):
+            glades += [dict(name=_trail_name(t), closed=True, P=poly(ring)) for ring in rings]
+            continue
         if t.get('piste:grooming') == 'backcountry' and not diff:
             skipped['backcountry route without a grade'] += 1
             continue
-        rings = _rings([m['ref'] for m in r.get('members', ()) if m.get('type') == 'way' and m.get('role', '') in ('outer', '')], ways)
         if not rings:
             skipped['trail area with an open outline'] += 1
         areas += [dict(osm=r['id'], ids=ring, name=_trail_name(t), diff=diff, tags=t) for ring in rings]
     trails = _chains(lines, poly, terrain, skipped)
     named = {tr['name'].lower() for tr in trails if tr['name']}
+    runs = [t['P'] for t in trails] + [g['P'] for g in glades if not g['closed'] and g['P'] is not None]
     for a in areas:
         if a['name'] and a['name'].lower() in named:
             continue                                       # the same run, also drawn as a line
         b = _bowl(a, poly, terrain)
         if b is None:
             skipped['trail area too small or not inside the square'] += 1
-        elif not a['name'] and any(t['shape'] == 'Corridor' and _inside(b['P'], t['P']).sum() >= 10 for t in trails):
+        elif not a['name'] and any(_inside(b['P'], P).sum() >= 10 for P in runs):
             skipped['unnamed piste area drawn round a run'] += 1     # >= 100 m of a run inside it: the same piste
         else:
             trails.append(b)
+    tree_check = None
+    if canopy is not None:                             # the glades OSM doesn't mark
+        try:
+            trees = _through_trees(trails, terrain, canopy)
+            glades += [dict(name=t['name'], closed=t['shape'] == 'Bowl', P=t['P']) for t, g in zip(trails, trees) if g]
+            trails = [t for t, g in zip(trails, trees) if not g]
+            tree_check = True
+        except (net.NetError, chm.CanopyError, OSError) as ex:
+            log.warning('tree check failed: %s', ex)
+            tree_check = False
+            notes.append('The satellite tree heights couldn\'t be downloaded right now, so only the glades marked in '
+                         'OpenStreetMap are left out. Switch the option off and on again later to find the others.')
+    gnames = {g['name'].lower() for g in glades if g['name']}
+    same = [bool(t['name'] and t['name'].lower() in gnames and not t['nogl'] and not t['road'])
+            for t in trails]                                                         # the rest of a glade's run
+    glades += [dict(name=t['name'], closed=t['shape'] == 'Bowl', P=t['P']) for t, s in zip(trails, same) if s]
+    trails = [t for t, s in zip(trails, same) if not s]
+    if glades:
+        skipped[GLADE] = len(gnames) + sum(not g['name'] for g in glades)
     k = Counter()
     for tr in sorted(trails, key=lambda t: -t['length_cm']):
         if not tr['name']:
             k[tr['difficulty']] += 1
             tr['name'] = '%s %d' % (RUN_NAME[tr['difficulty']], k[tr['difficulty']])
-    return dict(lifts=lifts, trails=trails, hubs=hubs, skipped=dict(skipped))
+    return dict(lifts=lifts, trails=trails, hubs=hubs, skipped=dict(skipped), glades=glades, notes=notes,
+                tree_check=tree_check)
+
+
+def _gladed(t):
+    """True if the piste is marked as tree skiing (gladed=yes, a piste that is itself a wood, a glade by name), False
+    if gladed=no says it isn't, else None"""
+    g = str(t.get('gladed') or '').strip().lower()
+    if g in ('no', 'false', '0'):
+        return False
+    if g in ('yes', 'true', '1') or t.get('natural') in ('wood', 'forest') or t.get('landuse') == 'forest':
+        return True
+    return True if GLADE_NAME.search(' '.join(str(t.get(k) or '') for k in ('piste:name', 'name', 'name:en'))) else None
+
+
+def _through_trees(trails, terrain, canopy):
+    """which trails go through the trees with no cleared corridor (by the canopy heights): a run is a glade when its
+    best smooth path within 15 m of the OSM line is under trees for GLADE_SHARE of its length (the path may drift one
+    2.5 m step per 5 m at the cost of half a tree, so it follows a run drawn a little off but can't weave between the
+    trees of a glade); a piste area when GLADE_COVER of it is under trees. Green runs (cat tracks), roads and
+    gladed=no pistes are never glades."""
+    pts = []
+    for t in trails:
+        if t['nogl'] or (t['shape'] == 'Corridor' and (t['difficulty'] == 'Beginner' or t['road'])):
+            pts.append(np.zeros((0, 2)))
+        elif t['shape'] == 'Corridor':
+            Q = _resample(t['P'], GLADE_STEP)
+            d = np.gradient(Q, axis=0)
+            d /= np.maximum(np.hypot(d[:, 0], d[:, 1]), 1e-9)[:, None]
+            side = np.column_stack([-d[:, 1], d[:, 0]])
+            pts.append((Q[:, None, :] + GLADE_OFFSETS[None, :, None] * side[:, None, :]).reshape(-1, 2))
+        else:
+            (x0, y0), (x1, y1) = t['P'].min(axis=0), t['P'].max(axis=0)
+            X, Y = np.meshgrid(np.arange(x0, x1, 6.0), np.arange(y0, y1, 6.0))
+            g = np.column_stack([X.ravel(), Y.ravel()])
+            pts.append(g[_inside(t['P'], g)] if len(g) else g)
+    allp = np.vstack(pts) if pts else np.zeros((0, 2))
+    if not len(allp):
+        return [False] * len(trails)
+    la, lo = terrain.latlon(allp[:, 0], allp[:, 1])
+    tall = np.asarray(canopy(la, lo)).ravel() >= TREE_M
+    out, k = [], 0
+    for t, p in zip(trails, pts):
+        h, k = tall[k:k + len(p)], k + len(p)
+        if not len(h):
+            out.append(False)
+        elif t['shape'] == 'Bowl':
+            out.append(bool(h.mean() >= GLADE_COVER))
+        else:
+            h = h.reshape(-1, len(GLADE_OFFSETS))
+            cost = h[0].astype(np.float64)
+            for row in h[1:]:
+                c = cost.copy()
+                c[1:] = np.minimum(c[1:], cost[:-1] + 0.5)
+                c[:-1] = np.minimum(c[:-1], cost[1:] + 0.5)
+                cost = c + row
+            out.append(bool(cost.min() / len(h) >= GLADE_SHARE))
+    return out
 
 
 def _trail_name(t):
@@ -565,7 +664,8 @@ def _corridor(name, diff, P, tags, terrain):
         not grooming & {'mogul', 'backcountry', 'no'}
     night = any(t.get('piste:lit') == 'yes' or t.get('lit') == 'yes' for t in tags)
     return dict(name=name, difficulty=diff, shape='Corridor', curves=curves, length_cm=_length(P) * 100.0,
-                max_slope=max_slope, mid=terrain.world(*_at(P, 0.5)), groomed=groomed, night=night, P=P, width=width)
+                max_slope=max_slope, mid=terrain.world(*_at(P, 0.5)), groomed=groomed, night=night, P=P, width=width,
+                road=any('highway' in t for t in tags), nogl=any(_gladed(t) is False for t in tags))
 
 
 def _bowl(a, poly, terrain):
@@ -588,7 +688,7 @@ def _bowl(a, poly, terrain):
     return dict(name=a['name'], difficulty=diff, shape='Bowl', outline=[terrain.world(*p) for p in O],
                 center=terrain.world(*c), radius_cm=math.sqrt(abs(area) / math.pi) * 100.0, length_cm=per * 100.0,
                 max_slope=min(max_slope, 60.0), mid=terrain.world(*c), groomed=False, night=False,
-                P=np.vstack([O, O[:1]]), width=None)
+                P=np.vstack([O, O[:1]]), width=None, road=False, nogl=_gladed(a['tags']) is False)
 
 
 # ---------------------------------------------------------------- for the app: summary, map lines, base, tree mask
@@ -599,7 +699,7 @@ def summary(pl):
                 difficulties=dict(Counter(t['difficulty'] for t in pl['trails'])),
                 lift_list=sorted((dict(id=l['osm'], name=l['name'], real=l['why'], game=LIFTS[l['row']][1], upkeep=upkeep(l))
                                   for l in pl['lifts']), key=lambda r: r['name'].lower()),
-                skipped=pl['skipped'])
+                skipped=pl['skipped'], notes=pl['notes'])
 
 
 def overlay(pl, terrain):
@@ -611,6 +711,8 @@ def overlay(pl, terrain):
            for l in pl['lifts']]
     out += [dict(kind=t['shape'].lower(), name=t['name'], difficulty=t['difficulty'], pts=ll(_resample(t['P'], 25.0)))
             for t in pl['trails']]
+    out += [dict(kind='glade', name=g['name'] or 'Glade', closed=g['closed'], pts=ll(_resample(g['P'], 25.0)))
+            for g in pl['glades'] if g['P'] is not None]
     return out
 
 

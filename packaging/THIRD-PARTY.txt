@@ -29,3 +29,5 @@ Map and elevation data (downloaded while you use the app)
 * Place search: Photon by komoot (OpenStreetMap data) and Nominatim (OpenStreetMap Foundation)
 * Elevation inside the USA: USGS 3D Elevation Program (public domain)
 * Elevation elsewhere: Terrain Tiles on AWS Open Data (Mapzen; sources include SRTM, GMTED2010, ETOPO1, 3DEP and others)
+* Tree canopy heights (to leave out glades): Meta and World Resources Institute (WRI), Global Canopy Height Map v2,
+  CC BY 4.0, on AWS Open Data -- https://registry.opendata.aws/dataforgood-fb-forests/
