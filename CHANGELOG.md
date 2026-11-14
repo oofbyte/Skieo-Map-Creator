@@ -7,14 +7,24 @@ Maps made with an older version show **Rebuild recommended** in My Maps: one cli
   is no longer supported (its game files are encrypted since its last update). Maps made with an older version
   show **Rebuild recommended**: rebuild them once for the full game.
 - **Custom maps are real size only**: the Map size switch (Real Size / Diorama) in Advanced Options is hidden for them.
+- **Oof's Simple Cheat Menu** (Mod Library, **F6** in game) replaces Weather Controls and keeps all of its weather
+  controls. Four tabs:
+  - **Money**: add $100K to $100M, pay off all loans, infinite money (never below $100M), income multiplier up to 10x.
+  - **Time**: speeds 1x to 100x, pause, skip ahead an hour, 6 hours, a day or a month, jump to morning, noon, sunset
+    or night, freeze the clock.
+  - **Weather**: force sunny, cloudy, snowing or blizzard; turn snowfall, storms and temperature up or down
+    (buried in snow? lower the snowfall); re-roll the winter.
+  - **Resort**: level up or jump to the top level (unlocks everything), add XP, add guests, and god mode switches:
+    no accidents, no breakdowns, staff never get tired, build anywhere (slopes, trees, overlapping).
+  If you had Weather Controls on, the app swaps it for the cheat menu by itself. F9 is now the full game's Report a Bug.
 - **R2 lifts cost what the game's own lift of the same kind costs**, to build and to run, and unlock at the same
   level: the R2 Six like the High-Speed Six ($721,200+, Elite Resort), the R2 Gondola like the Gondola ($2,414,400+,
   World-Class). Before, both cost what the double chair does and were available almost from the start.
+- **The R2 lifts install only through the Mod Library** (no more copying files into `~mods` by hand). The app keeps
+  them up to date: a pack from an older version, or one copied in by hand, is replaced with the app's own.
 - **The R2 lifts no longer hide new buildings**: with an R2 lift switched on, the full game's Base Lodge and autumn
   decorations were missing from the build menu. The app now copies the game's building list from your own game
   files, and copies it again after a game update the next time the app starts.
-- **Weather Controls** opens with **F6** in game (F9 is the full game's Report a Bug). Mods you switched on with an
-  older version are updated automatically.
 
 ## v1.3.0
 - **Millions of trees**: the game normally shows no trees at all on a map with more than 1.5 million. The creator now

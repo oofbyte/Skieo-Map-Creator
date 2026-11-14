@@ -28,9 +28,11 @@ from .engine import legacy_header as lh
 log = logging.getLogger(__name__)
 
 MODS = {
-    'weather': dict(kind='lua', folder='SkiWeather', name='Weather Controls', key='F6',
-                    about='Live weather panel in game: force sunny / snowing / blizzard, and turn snowfall, storms and '
-                          'temperature up or down. Fixes resorts getting buried in snow.'),
+    'cheats': dict(kind='lua', folder='OofsCheatMenu', name="Oof's Simple Cheat Menu", key='F6',
+                   about='Cheat menu in game: add money or make it infinite, speed time up to 100x or skip ahead, '
+                         'force the weather and change the climate (buried in snow? turn snowfall down), max out '
+                         'your reputation to unlock everything, spawn guests, switch off accidents, breakdowns and '
+                         'tired staff, and build anywhere.'),
     'r2six': dict(kind='pak', name='Doppelmayr D-Line R2 Six', pak='ZZZ_DoppelmayrR2Six_P',
                   zip='DLine_R2_Six_LiftMod.zip',
                   about='New lift in the build menu: D-Line R2 glass station, six-seat bubble chairs, Doppelmayr '
@@ -43,6 +45,7 @@ MODS = {
 PAK_EXTS = ('.pak', '.ucas', '.utoc')
 OWN_LIFT_MOD = 'ZZZ_LiftMod_P.pak'          # the mod author's all-in-one lift pack already contains both R2 lifts
 MARKER = 'installed-by-skieo-map-creator.txt'
+LEGACY_LUA = {'SkiWeather': 'cheats'}       # Lua mods of older app versions -> the mod that replaced them
 STOCK_PAK = 'ZZZ_LiftStock_9_P'             # the player's own building table for the lift packs (see above)
 STOCK_TABLE = 'DT_BuildingStock_0'          # same length as DT_BuildingEconomy: a rename in place
 STOCK_STAMP = 'skieo_lift_stock.json'       # in ~mods: the game files STOCK_PAK was made from
@@ -163,9 +166,11 @@ def _state(game_folder):
 
 
 def _outdated(game_folder, m):
+    """the packs are installed only by the app, so any other version (an older app's, or one copied in by hand) is
+    replaced by the app's own; compared by the toc, which hashes every chunk"""
     with zipfile.ZipFile(paths.resource('data', 'lifts', m['zip'])) as z:
         shipped = z.read(next(n for n in z.namelist() if Path(n).name == m['pak'] + '.utoc'))
-    return shipped != (_mods_dir(game_folder) / (m['pak'] + '.utoc')).read_bytes()     # the toc hashes every chunk
+    return shipped != (_mods_dir(game_folder) / (m['pak'] + '.utoc')).read_bytes()
 
 
 def _build_stock(game_folder):
@@ -201,6 +206,11 @@ def refresh(game_folder):
         if key in _refreshed:
             return
         b = _bin(game_folder)
+        for old, new_id in LEGACY_LUA.items():          # Weather Controls became the cheat menu (it has the weather)
+            if _lua_on(b, old):
+                log.info('%s: replaced by %s', old, MODS[new_id]['name'])
+                _set_lua(game_folder, MODS[new_id], True)            # first, so UE4SS stays
+                _set_lua(game_folder, dict(folder=old), False)
         for m in MODS.values():                         # Lua mods from an older app version (the weather key was F9,
             if m['kind'] == 'lua' and _lua_on(b, m['folder']):      # the full game's Report a Bug key)
                 inst = b / 'ue4ss' / 'Mods' / m['folder'] / 'Scripts' / 'main.lua'
