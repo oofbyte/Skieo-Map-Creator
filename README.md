@@ -31,8 +31,8 @@ built or uploaded by hand. Three ways to check one:
    It opens the exe and checks every bundled file byte for byte and every app module as compiled code against the
    source, and lists everything else inside (Python and the libraries in `requirements.txt`).
 
-What the app connects to: map tiles (OpenStreetMap, OpenTopoMap), place search (Photon, Nominatim) and elevation
-data (USGS 3DEP, AWS Terrain Tiles). retoc downloads the Oodle compression library on first use. No accounts, no
+What the app connects to: map tiles (OpenStreetMap, OpenTopoMap), place search (Photon, Nominatim), elevation
+data (USGS 3DEP, AWS Terrain Tiles) and, with **Real trails and lifts** on, the OpenStreetMap ski data (Overpass API). retoc downloads the Oodle compression library on first use. No accounts, no
 telemetry. It writes to `%LOCALAPPDATA%\SkiEO Map Creator` and the game's `Content\Paks\~mods` folder, never to
 saves.
 
@@ -52,6 +52,10 @@ saves.
    - **Everything else:** terrain material overrides (`engine/material_params.py`), the height texture, the map
      preview, the starting save (ticket office on the base area), and the map list entry. Every renamed string keeps
      its length.
+   - **Real trails and lifts** (optional, `resort.py`): the ski area's OpenStreetMap lifts and pistes become the
+     game's own lift and trail records in the starting save (read and written with `engine/gvas_tree.py`, record
+     layouts from `data/resort_templates.bin`), the forest leaves their corridors clear, and the map list entry's
+     `InitialSave` makes New Game start from that save.
 4. **Pack and install**: retoc `to-zen` packs a `ZZZ_MC_<name>_P` pak. `install.py` adds the map to the game's
    map list (`ZZZ_Registry_P`) and copies it into `Content/Paks/~mods`.
 
@@ -83,10 +87,11 @@ This makes `dist\SkiEO-Map-Creator.exe`, a single file that bundles `web/`, `dat
 | `skieo_creator/` | app: `main.py` (window), `api.py` (calls from the page), `builder.py`, `trees.py`, `shells.py`, `dem.py`, `install.py` ... |
 | `skieo_creator/engine/` | writers for the cooked map data (heightmaps, providers, bounds, collision, frame, headers, materials) |
 | `web/` | the UI (HTML / CSS / JS) and vendored Leaflet + three.js |
-| `data/` | the cooked snow-shell template |
+| `data/` | the cooked snow-shell template; `resort_templates.bin`, blank lift / trail save records (from `packaging/make_resort_templates.py`) |
 | `tools/` | retoc.exe (MIT, https://github.com/trumank/retoc) |
 | `packaging/` | PyInstaller spec, build script, icon, version info, credits (`THIRD-PARTY.txt`), `verify_exe.py` |
-| `tests/ui_drive.py` | scripted UI sessions with screenshots (`search`, `3d`, `3d-offline`, `numbox`) |
+| `tests/ui_drive.py` | scripted UI sessions with screenshots (`search`, `3d`, `3d-offline`, `numbox`, `osm`, ...) |
+| `tests/test_resort.py` | self-check of the trail and lift import rules on made-up data |
 | `.github/workflows/release.yml` | builds, checks, hashes and attests the exe and attaches it to each release |
 
 ## Releasing

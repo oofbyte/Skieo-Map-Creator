@@ -10,7 +10,7 @@ const S = {
   // map tiles come from their own local port, so slow / failing tile downloads never hold up the app's requests
   tiles: /^\d+$/.test(Q.get('tp') || '') ? `http://127.0.0.1:${Q.get('tp')}` : '',
   units: 'ft', layer: 'topo', game: null, biomes: [], limits: { min_km: 3, max_km: 20 },
-  sq: { lat: 45.92, lon: 6.88, km: 8 }, preview: null, job: null, maps: [], overlayOn: true,
+  sq: { lat: 45.92, lon: 6.88, km: 8 }, preview: null, osm: null, job: null, maps: [], overlayOn: true,
   touched: { biome: false, treeline: false, snow: false, name: false }, suggestName: '',
   dragging: false, busyPoll: null,
 };
@@ -116,7 +116,7 @@ const handle = L.marker([S.sq.lat, S.sq.lon], {
   icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15],
     html: '<div class="move-handle"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg></div>' }),
 }).addTo(map);
-let overlay = null;
+let overlay = null, osmLayer = null;
 
 function drawSquare() {
   const c = corners(S.sq.lat, S.sq.lon, S.sq.km);
@@ -153,6 +153,7 @@ function areaChanged() {
   if (p && !same) {
     S.preview = null;
     if (overlay) { map.removeLayer(overlay); overlay = null; }
+    clearOsm();
     $('overlayBtn').disabled = true;
     lockTerrain(true);
     toast('The area changed. Press "Load terrain" to load it.');
@@ -223,7 +224,7 @@ function updateButtons() {
   const ready = g && g.found;
   $('loadBtn').disabled = busy();
   $('createBtn').disabled = busy() || !S.preview || !ready || !$('name').value.trim() || S.nameBad;
-  $('size').disabled = $('sizeOut').disabled = busy();
+  $('size').disabled = $('sizeOut').disabled = $('osm').disabled = busy();
   document.querySelectorAll('.mact .link').forEach((b) => { b.disabled = busy(); });
 }
 
@@ -273,7 +274,7 @@ async function prepareGame() {
 
 /* ------------------------------------------------------------ jobs */
 
-const JOB_TITLES = { prepare: 'Preparing', preview: 'Loading terrain', create: 'Creating map', install: 'Installing',
+const JOB_TITLES = { prepare: 'Preparing', preview: 'Loading terrain', osm: 'Loading the trails and lifts', create: 'Creating map', install: 'Installing',
   uninstall: 'Removing', delete: 'Deleting', rebuild: 'Rebuilding', repair: 'Repairing the map list' };
 
 function startJob(j) {
@@ -290,9 +291,9 @@ function renderJob() {
   const j = S.job;
   const box = $('jobBox');
   const active = j && (j.state === 'running' || j.state === 'waiting');
-  const anchor = j && j.kind === 'preview' ? $('loadBtn') : $('createBtn');
+  const anchor = j && j.kind === 'preview' ? $('loadBtn') : j && j.kind === 'osm' ? $('osmRow') : $('createBtn');
   if (box.previousElementSibling !== anchor) anchor.after(box);
-  const inPanel = j && ['preview', 'create', 'install', 'rebuild', 'uninstall', 'delete', 'repair', 'prepare'].includes(j.kind);
+  const inPanel = j && ['preview', 'osm', 'create', 'install', 'rebuild', 'uninstall', 'delete', 'repair', 'prepare'].includes(j.kind);
   box.classList.toggle('hidden', !(active && inPanel));
   box.classList.toggle('waiting', !!(j && j.state === 'waiting'));
   if (active) {
@@ -317,11 +318,13 @@ window.app = {
 };
 
 function jobFinished(j) {
+  if (j.kind === 'osm' && j.state !== 'done') { $('osm').checked = false; clearOsm(); }
   if (j.state === 'cancelled') { toast('Cancelled'); return refreshGame(); }
   if (j.state === 'error') { refreshGame(); return errorBox(j.error); }
   const r = j.result || {};
   if (j.kind === 'prepare') { renderGame(r); toast('Game files ready'); }
   if (j.kind === 'preview') showPreview(r);
+  if (j.kind === 'osm') showOsm(r);
   if (j.kind === 'create') { showDone(r); loadMaps(); }
   if (['install', 'uninstall', 'rebuild'].includes(j.kind)) {
     toast({ install: 'Installed in Ski-E-O', uninstall: 'Removed from Ski-E-O', rebuild: 'Rebuilt and installed' }[j.kind]);
@@ -369,7 +372,68 @@ function showPreview(p) {
   checkName();
   updateButtons();
   $('cardSettings').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  clearOsm();
+  if ($('osm').checked) startOsm();
 }
+
+/* ------------------------------------------------------------ real trails and lifts (OpenStreetMap) */
+
+const DIFF_COLOR = { Beginner: '#2e9e4f', Intermediate: '#2563eb', Expert: '#151515', Pro: '#151515' };
+async function startOsm() {
+  clearOsm();
+  const r = await call('osm');
+  if (!r.ok) { $('osm').checked = false; return errorBox(r.error); }
+  startJob(r);
+}
+function clearOsm() {
+  S.osm = S.osmSkip = null;
+  if (osmLayer) { map.removeLayer(osmLayer); osmLayer = null; }
+  $('osmInfo').classList.add('hidden');
+  $('osmInfo').innerHTML = '';
+}
+function showOsm(r) {
+  if (!$('osm').checked || !S.preview) return;           // switched off, or the area changed, while it loaded
+  S.osm = r;
+  osmLayer = L.layerGroup(r.lines.map((x) => {
+    if (x.kind === 'lift') {
+      return L.polyline(x.pts, { color: '#c0392b', weight: 3, dashArray: '7 4' })
+        .bindTooltip(`${esc(x.name)}<br>${esc(x.game)}`, { sticky: true });
+    }
+    const st = { color: DIFF_COLOR[x.difficulty], weight: 2.5, opacity: 0.9, dashArray: x.difficulty === 'Pro' ? '2 5' : null };
+    return (x.kind === 'bowl' ? L.polygon(x.pts, { ...st, fillOpacity: 0.12 }) : L.polyline(x.pts, st))
+      .bindTooltip(esc(x.name), { sticky: true });
+  })).addTo(map);
+  const s = r.summary, d = s.difficulties || {};
+  const skipped = Object.entries(s.skipped || {});
+  S.osmSkip = new Set();
+  $('osmInfo').innerHTML = '<div class="stats">' + [['Lifts', s.lifts], ['Trails', s.trails],
+    ['Green / blue', `${d.Beginner || 0} / ${d.Intermediate || 0}`], ['Black / 2×', `${d.Expert || 0} / ${d.Pro || 0}`]]
+    .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('') + '</div>' +
+    (s.lift_list.length ? '<details><summary>The lifts in the game (untick to leave one out)</summary><div class="osm-list">' +
+      s.lift_list.map((l) => `<label><input type="checkbox" data-id="${l.id}" checked><b>${esc(l.name)}</b>` +
+        `<span>${esc(l.real)} → ${esc(l.game)} · $${l.upkeep.toLocaleString('en-US')}/night</span></label>`).join('') +
+      '</div></details><div class="meta" id="osmCost"></div>' : '') +
+    (skipped.length ? `<div class="meta">Left out: ${skipped.map(([k, v]) => `${esc(k)} (${v})`).join(', ')}.</div>` : '');
+  $('osmInfo').querySelectorAll('.osm-list input').forEach((c) => {
+    c.onchange = () => { if (c.checked) S.osmSkip.delete(+c.dataset.id); else S.osmSkip.add(+c.dataset.id); osmCost(); };
+  });
+  osmCost();
+  $('osmInfo').classList.remove('hidden');
+}
+// lifts cost upkeep every night, open or not; a real resort's lifts cost far more than a new game earns at first
+function osmCost() {
+  const box = $('osmCost'), s = S.osm && S.osm.summary;
+  if (!box || !s) return;
+  const kept = s.lift_list.filter((l) => !S.osmSkip.has(l.id));
+  const night = kept.reduce((a, l) => a + l.upkeep, 0);
+  box.textContent = `Upkeep of the ${kept.length} lifts: $${night.toLocaleString('en-US')} a night, open or not. A new game ` +
+    'starts with $165,000: to run a big resort from day one, turn on Sandbox (no costs) in Advanced Options when you ' +
+    'start it, or leave lifts out here and build them in the game as you grow.';
+}
+$('osm').onchange = () => {
+  if (!$('osm').checked) return clearOsm();
+  if (S.preview) startOsm();
+};
 
 $('photo').onclick = () => {
   if (!S.preview || !window.terrain3d) return;
@@ -555,7 +619,8 @@ $('createBtn').onclick = async () => {
     name, lat: S.preview.lat, lon: S.preview.lon, size_km: S.preview.size_km, biome: $('biome').value,
     treeline_m: +$('treeline').value, snow: +$('snow').value, valley_m: +$('valley').value, max_trees: +$('trees').value,
     tree_slope: +$('slope').value, treeline_fade: +$('fade').value,
-    base: S.preview.base,             // flattest low ground, picked when the terrain loaded
+    base: S.preview.base,             // flattest low ground, picked when the terrain loaded (with real lifts: their base)
+    osm: $('osm').checked && !!S.osm, osm_skip: S.osmSkip ? [...S.osmSkip] : [],
   });
   if (!r.ok) return errorBox(r.error);
   $('doneBox').classList.add('hidden');
@@ -566,7 +631,8 @@ function showDone(m) {
   $('doneImg').src = m.thumb || '';
   $('doneTitle').textContent = m.name;
   $('doneText').textContent = `Start Ski-E-O, choose New Resort and pick ${m.name} on the map list ` +
-    `(with the ${m.biome_label} maps).` + (m.stats && m.stats.trees != null ? ` ${m.stats.trees.toLocaleString('en-US')} trees planted.` : '');
+    `(with the ${m.biome_label} maps).` + (m.stats && m.stats.trees != null ? ` ${m.stats.trees.toLocaleString('en-US')} trees planted.` : '') +
+    (m.stats && m.stats.lifts ? ` ${m.stats.lifts} lifts and ${m.stats.trails} trails are built in.` : '');
   $('doneBox').classList.remove('hidden');
   $('doneBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -577,6 +643,7 @@ $('againBtn').onclick = () => {
   S.touched = { biome: false, treeline: false, snow: false, name: false };
   S.preview = null;
   if (overlay) { map.removeLayer(overlay); overlay = null; }
+  clearOsm();
   $('overlayBtn').disabled = true;
   lockTerrain(true);
   updateButtons();

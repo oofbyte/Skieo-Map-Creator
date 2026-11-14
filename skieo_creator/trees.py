@@ -141,10 +141,12 @@ def max_trees(size_km):
     return int(round(TREES_PER_KM2 * size_km * size_km, -3))
 
 
-def plant(H, sp, sc, density_records, rng, open_mask, max_trees=DEFAULT_TREES, tree_slope=TREE_SLOPE, weight=None):
+def plant(H, sp, sc, density_records, rng, open_mask, max_trees=DEFAULT_TREES, tree_slope=TREE_SLOPE, weight=None,
+          clear=None):
     """tree positions (x, y in metres from the landscape corner, z in metres above its bottom) at the stock density,
     thinned evenly when that would give more than max_trees; none on ground steeper than tree_slope (deg);
-    weight (0..1 per vertex, optional) thins them further"""
+    weight (0..1 per vertex, optional) thins them further; clear (optional (bool raster, metres per cell), row = y)
+    marks ground kept free of trees (trails, lifts)"""
     rec = np.frombuffer(density_records, np.uint8).reshape(-1, STRIDE)
     X = rec[:, 0:4].copy().view('<i4').ravel() / 1000.0
     Y = rec[:, 4:8].copy().view('<i4').ravel() / 1000.0
@@ -168,6 +170,9 @@ def plant(H, sp, sc, density_records, rng, open_mask, max_trees=DEFAULT_TREES, t
          + Hf[y0 + 1, x0 + 1] * fx * fy)
     iy, ix = np.clip(np.rint(vy).astype(int), 0, G - 1), np.clip(np.rint(vx).astype(int), 0, G - 1)
     keep = rng.random(n) < ok[iy, ix]
+    if clear is not None:
+        cm, res = clear
+        keep &= ~cm[np.clip((y / res).astype(int), 0, cm.shape[0] - 1), np.clip((x / res).astype(int), 0, cm.shape[1] - 1)]
     keep &= np.cumsum(keep) <= max_trees      # the thinning is random; never past max_trees (the game drops ALL past its limit)
     return x[keep], y[keep], (h[keep] + 32768) * sc
 
@@ -202,7 +207,7 @@ def _target_species(name, rule, available):
 
 
 def forest(H, hmin, sp, sc, biome, treeline, valley, donors, species, biome_species, seed, max_trees=DEFAULT_TREES,
-           tree_slope=TREE_SLOPE, treeline_fade=0.0):
+           tree_slope=TREE_SLOPE, treeline_fade=0.0, clear=None):
     """-> (record bytes, table bytes, header tail, {species: count})
     donors: {'mrg': skob, 'sb': skob}; species: {short name: [(size, state, trunk)]}; biome_species: short names"""
     rng = np.random.default_rng(seed)
@@ -215,7 +220,7 @@ def forest(H, hmin, sp, sc, biome, treeline, valley, donors, species, biome_spec
     if treeline > 0 and treeline_fade > 0:                 # forest thins out over the last treeline_fade m below it
         weight = np.clip((treeline - ((H.astype(np.float64) + 32768) * sc + hmin)) / treeline_fade, 0.0, 1.0)
     x, y, z = plant(H, sp, sc, donors['mrg']['records'], rng, mask, max_trees=max_trees, tree_slope=tree_slope,
-                    weight=weight)
+                    weight=weight, clear=clear)
     m = len(x)
     donor = donors[spec['donor']]
     hdr_tail = donor['hdr'][16:]

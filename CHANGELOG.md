@@ -2,6 +2,22 @@
 
 Maps made with an older version show **Rebuild recommended** in My Maps: one click on Rebuild gives them the fixes.
 
+## v1.6.0
+- **Real trails and lifts** (new switch under Your resort): builds the real ski area into the map from
+  OpenStreetMap, so a **New Game** on it starts with the resort already there:
+  - **Every lift** as the closest lift in the game, in its real place, with its real name: a six-pack becomes a
+    High-Speed Six, an express quad a High-Speed Quad, a fixed quad a 4-Person Fixed Grip, a double a 2-Person Fixed
+    Grip, gondolas Gondolas, cable cars Aerial Trams (T-bars, platters and carpets, which the game doesn't have,
+    become fixed-grip chairs). Towers stand where the game would put them, and lift stations close together share a
+    base area, named after the real station where OpenStreetMap has one.
+  - **Every trail** with its name and rating (green, blue, black, double black), along its real line down the
+    mountain; open piste areas become bowls. No trees grow on the trails or under the lifts.
+  - The map shows the trails and lifts before you build, with the list of lifts and what each costs to run.
+- Lifts cost upkeep every night, open or not, and a real resort's lifts cost far more than a new game earns at
+  first (Beaver Creek's 19: about $239,000 a night). Untick lifts to leave them out (build them in the game later),
+  or turn on **Sandbox** (no costs) in the game's Advanced Options when you start the resort. The lifts came free,
+  so bulldozing one pays nothing back.
+
 ## v1.5.0
 - **Oof's Alpine Buildings** (Mod Library): 50 new buildings in the build menu (under Comfort), all made from scratch
   for the pack out of the game's own materials (wood, stone, metal roofs, windows that light up at night):

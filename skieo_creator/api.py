@@ -19,7 +19,7 @@ import webbrowser
 import numpy as np
 from PIL import Image
 
-from . import APP_NAME, VERSION, biomes, builder, dem, gamedata, geo, install, modlib, net, paths, server, trees
+from . import APP_NAME, VERSION, biomes, builder, dem, gamedata, geo, install, modlib, net, paths, resort, server, trees
 
 log = logging.getLogger(__name__)
 GAME_URL = 'steam://rungameid/' + install.APP_ID
@@ -38,6 +38,7 @@ NOMINATIM = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&q=
 MIN_KM, MAX_KM = 3.0, 20.0                  # same 2017x2017 grid at every size: ~10 m between points at 20 km
 PREFIX = 'mc_'
 ORDER_BASE = 1000
+BASE_MARGIN = 40                            # grid cells: the base area (ticket office + parking) stays this far inside
 SETTING_KEYS = ('units', 'layer', 'view')
 # resort names: plain letters / digits / space and a little punctuation (the page turns accents into plain letters)
 NAME_CHARS = re.compile(r"[A-Za-z0-9 '.&()\-]+")
@@ -50,7 +51,7 @@ class UserError(Exception):
 
 def _friendly(e):
     if isinstance(e, (UserError, install.InstallError, gamedata.GameDataError, dem.DemError, net.NetError,
-                      builder.BuildError)):
+                      builder.BuildError, resort.ResortError)):
         return str(e)
     if isinstance(e, MemoryError):
         return 'Your PC ran out of memory while building the map. Close other programs and try again.'
@@ -424,6 +425,29 @@ class Api:
                     defaults=biomes.defaults(float(blat), float(blon)))
 
     @_safe
+    def osm(self):
+        """the real resort's trails and lifts (OpenStreetMap) on the loaded terrain: counts, map lines"""
+        if not self._preview:
+            raise UserError('Load the terrain first.')
+        return self._run('osm', lambda job: self._do_osm(job, self._preview))
+
+    @staticmethod
+    def _osm_terrain(pv):
+        size_m = pv['size_km'] * 1000.0
+        H, fr = builder.heights(pv['dem'], size_m)
+        return resort.Terrain(H, fr, pv['lat'], pv['lon'], size_m)
+
+    def _do_osm(self, job, pv):
+        raw = resort.fetch(pv['lat'], pv['lon'], pv['size_km'] * 1000.0, job.cancel, lambda f, t: job.progress(0.8 * f, t))
+        job.progress(0.85, 'Fitting the trails and lifts to the terrain...')
+        terrain = self._osm_terrain(pv)
+        pl = resort.plan(json.loads(raw), terrain)
+        if not pl['lifts'] and not pl['trails']:
+            raise UserError('OpenStreetMap has no ski trails or lifts inside this square.')
+        pv['osm'] = raw
+        return dict(summary=resort.summary(pl), lines=resort.overlay(pl, terrain))
+
+    @_safe
     def view3d(self, treeline_m=None):
         """heights + colour texture of the loaded terrain for the 3D view (served from the local server)"""
         pv = self._preview
@@ -498,13 +522,21 @@ class Api:
         biome = params.get('biome')
         if biome not in biomes.BIOMES:
             raise UserError('Pick a biome.')
+        osm = pv.get('osm') if params.get('osm') else None
+        if params.get('osm') and not osm:
+            raise UserError('The real trails and lifts are not loaded yet. Switch the option off and on again.')
+        osm_skip = sorted({int(i) for i in params.get('osm_skip') or ()})       # lifts the player left out
         size_m = pv['size_km'] * 1000.0
-        g = geo.LocalGrid(pv['lat'], pv['lon'])
-        bx, by = g.to_xy(float(params['base'][0]), float(params['base'][1]))
         sp, half = size_m / (builder.G - 1), size_m / 2
+        base = params['base']
+        if osm:                            # the ticket office at the real resort's main base, among the lifts kept
+            terrain = self._osm_terrain(pv)
+            base = resort.suggest_base(resort.plan(json.loads(osm), terrain, skip=osm_skip), terrain,
+                                       margin_m=(BASE_MARGIN + 2) * sp) or base
+        g = geo.LocalGrid(pv['lat'], pv['lon'])
+        bx, by = g.to_xy(float(base[0]), float(base[1]))
         col, row = (float(bx) + half) / sp, (half - float(by)) / sp
-        margin = 40
-        if not (margin <= row <= builder.G - 1 - margin and margin <= col <= builder.G - 1 - margin):
+        if not (BASE_MARGIN <= row <= builder.G - 1 - BASE_MARGIN and BASE_MARGIN <= col <= builder.G - 1 - BASE_MARGIN):
             raise UserError('Put the base area marker inside the square (not right at its edge).')
         treeline_m = float(params.get('treeline_m', biomes.default_treeline(biome, pv['lat'])))
         return dict(name=name, lat=pv['lat'], lon=pv['lon'], size_m=size_m, size_km=pv['size_km'], biome=biome,
@@ -514,9 +546,9 @@ class Api:
                     tree_slope=float(np.clip(float(params.get('tree_slope') or trees.TREE_SLOPE), trees.MIN_TREE_SLOPE, trees.MAX_TREE_SLOPE)),
                     treeline_fade=float(np.clip(float(params.get('treeline_fade', trees.TREELINE_FADE)), 0, trees.MAX_TREELINE_FADE)),
                     acres=int(np.clip(int(params.get('acres') or 0) or self._acres(size_m), 10, 50000)),
-                    base_rc=[row, col], base_latlon=[float(params['base'][0]), float(params['base'][1])],
+                    base_rc=[row, col], base_latlon=[float(base[0]), float(base[1])],
                     source=pv['src'], seed=secrets.randbelow(2 ** 31 - 1) + 1, tg=secrets.randbelow(2 ** 31 - 2) + 1,
-                    game=st)
+                    game=st, osm=osm, osm_skip=osm_skip)
 
     @staticmethod
     def _acres(size_m):
@@ -529,6 +561,9 @@ class Api:
         spec = dict((k, p[k]) for k in ('name', 'lat', 'lon', 'size_m', 'biome', 'treeline', 'valley', 'snow', 'max_trees',
                                         'tree_slope', 'treeline_fade', 'acres', 'base_rc', 'base_latlon', 'seed', 'tg', 'source'))
         spec['slug'] = slug
+        if p['osm']:                       # kept with the map, so a rebuild makes the same trails and lifts
+            paths.atomic_write(paths.MAPS / slug / 'osm.json', p['osm'])
+            spec.update(osm=True, osm_skip=p['osm_skip'])
         d = self._preview['dem'] if self._preview else None
         if d is None:
             d, _ = dem.load(p['lat'], p['lon'], p['size_m'], job.cancel, lambda f, t: job.progress(0.05 + 0.1 * f, t), prefer=p['source'])

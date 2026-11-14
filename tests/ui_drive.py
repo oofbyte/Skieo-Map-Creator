@@ -11,6 +11,9 @@ usage: python tests/ui_drive.py <out dir> <scenario>
              bigtrees -- 20 km map with the most trees the slider allows: create and install (Ski-E-O must be closed)
              mods     -- Mod Library: switch on the pack named by env MOD (default 'buildings') with its real switch
                          (Ski-E-O must be closed)
+             osm      -- real trails and lifts: search env OSM_Q (default 'Beaver Creek'; OSM_KM size, OSM_AT "lat,lon"
+                         centre), load terrain, switch the OpenStreetMap option on, show the lines and the lift list;
+                         with env OSM_NAME also create and install the map (Ski-E-O must be closed)
   Set LOCALAPPDATA to a scratch folder to keep the test away from a creator that is running for real.
 """
 import ctypes
@@ -355,8 +358,49 @@ def drive(win):
         time.sleep(1.5)
         shot('55_maps')
         print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
+    if SCEN == 'osm':                                          # real trails and lifts from OpenStreetMap
+        js(win, "document.getElementById('q').value = %s; doSearch();" % json.dumps(os.environ.get('OSM_Q', 'Beaver Creek')))
+        wait_js(win, "document.querySelectorAll('.row[data-i]').length > 0", 30)
+        js(win, "pickResult(0)")
+        time.sleep(2)
+        if os.environ.get('OSM_KM'):
+            js(win, "var b = document.getElementById('sizeOut'); b.focus(); b.value = %s;"
+                    "b.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))" % json.dumps(os.environ['OSM_KM']))
+        if os.environ.get('OSM_AT'):                               # "lat,lon": the square's centre
+            js(win, "moveSquare(%s); fitSquare(); 0" % os.environ["OSM_AT"])
+        time.sleep(1)
+        js(win, "document.getElementById('loadBtn').click()")
+        wait_js(win, "!!S.preview", 300)
+        js(win, "(function (i) { i.checked = true; i.dispatchEvent(new Event('change')); })(document.getElementById('osm'))")
+        time.sleep(1.5)
+        shot('a1_loading')
+        wait_js(win, "!!S.osm || !(S.job && S.job.state === 'running')", 400)
+        time.sleep(2.5)
+        js(win, "document.getElementById('osmInfo').scrollIntoView({block: 'center'}); 0")
+        time.sleep(0.8)
+        shot('a2_osm')
+        print('osm', (js(win, "JSON.stringify(S.osm && S.osm.summary)") or '')[:4000], flush=True)
+        js(win, "document.querySelector('#osmInfo details') && (document.querySelector('#osmInfo details').open = true)")
+        time.sleep(0.5)
+        shot('a3_list')
+        js(win, "map.setZoom(map.getZoom() + 1.5); 0")
+        time.sleep(3)
+        shot('a4_zoom')
+        if os.environ.get('OSM_NAME'):                             # create and install it (Ski-E-O must be closed)
+            js(win, "var n = document.getElementById('name'); n.value = %s; n.dispatchEvent(new Event('input'));"
+                    % json.dumps(os.environ['OSM_NAME']))
+            if not wait_js(win, "!document.getElementById('createBtn').disabled", 900):
+                print('create disabled:', js(win, "JSON.stringify({job: S.job, osm: !!S.osm, nameBad: S.nameBad})"), flush=True)
+            js(win, "document.getElementById('createBtn').click()")
+            wait_js(win, "S.job && S.job.kind === 'create' && ['done', 'error', 'waiting'].includes(S.job.state)", 1800)
+            time.sleep(1.5)
+            js(win, "document.getElementById('panel').querySelector('#tab-create').scrollTop = 99999")
+            time.sleep(0.6)
+            shot('a5_created')
+            print('job', (js(win, "JSON.stringify(S.job)") or '')[:800], flush=True)
+        print('errors', js(win, "JSON.stringify(window.__errs || [])"), flush=True)
     if SCEN == 'mods':
-        sel = "document.querySelector('#modsList .mrow[data-mod=%s] .switch input')" % json.dumps(os.environ.get('MOD', 'buildings'))
+        sel ="document.querySelector('#modsList .mrow[data-mod=%s] .switch input')" % json.dumps(os.environ.get('MOD', 'buildings'))
         js(win, "document.getElementById('modsBtn').click()")
         wait_js(win, "document.querySelectorAll('#modsList .mrow, #modsList .empty').length > 0", 60)
         time.sleep(0.8)

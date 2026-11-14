@@ -10,6 +10,7 @@ The map is a copy of the game's Mad River Glen map with:
 and is packed with retoc into ZZZ_MC_<slug>_P.pak/.ucas/.utoc plus a .skimap package for the map installer.
 """
 import io
+import json
 import logging
 import os
 import re
@@ -24,7 +25,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 
-from . import gamedata, shells, trees
+from . import gamedata, resort, shells, trees
 from .engine import collision_write as cw
 from .engine import component_bounds as cb
 from .engine import frame as FR
@@ -162,8 +163,9 @@ def slope_deg(H, fr):
     return np.degrees(np.arctan(np.hypot(gx, gy)))
 
 
-def base_site(H, fr, r0, c0, radius=60):
-    """flattest ground (28-cell window, ~ticket office + parking) near (r0, c0); radius in cells"""
+def base_site(H, fr, r0, c0, radius=60, avoid=None):
+    """flattest ground (28-cell window, ~ticket office + parking) near (r0, c0); radius in cells; avoid (optional bool
+    grid): ground to keep the office off (trails, lifts)"""
     slope = slope_deg(H, fr)
     W = 14
     best = None
@@ -172,6 +174,8 @@ def base_site(H, fr, r0, c0, radius=60):
         for c in range(max(W, c0 - radius), min(G - W - 1, c0 + radius) + 1, 2):
             w = slope[r - W:r + W + 1, c - W:c + W + 1]
             m = w.mean() + 0.15 * w.max() + 0.02 * np.hypot(r - r0, c - c0)
+            if avoid is not None:
+                m += 20.0 * avoid[r - W:r + W + 1, c - W:c + W + 1].mean()
             if best is None or m < best[0]:
                 best = (m, r, c)
     return int(best[1]), int(best[2])
@@ -492,13 +496,16 @@ def typed(stats):
     return [[k, 'f' if isinstance(v, float) else 'i', v] for k, v in stats.items()]
 
 
-def entry_spec(names, display, biome, stats):
+def entry_spec(names, display, biome, stats, start_save=False):
+    """start_save: New Game starts from the map's starting save (the full game uses one only when this is set; the
+    stock maps start empty), e.g. with the real resort's lifts and trails in it"""
     prev = 'DA_MapPreview_' + names.mapn
     return {'append': TEMPLATE_KEY,
             'add_names': [names.p_map, names.mapn, names.p_pre, prev, names.p_is, names.is_new],
             'initial_save': {'package': names.p_is, 'object': names.is_new},
-            'set': [['Map', 'ref', names.p_map, names.mapn], ['MapPreview', 'ref', names.p_pre, prev],
-                    ['TutorialInitialSave', 'initial_save'], ['bIsTutorialMap', 'hex', '01'],
+            'set': [['Map', 'ref', names.p_map, names.mapn], ['MapPreview', 'ref', names.p_pre, prev]]
+                   + ([['InitialSave', 'initial_save']] if start_save else []) +
+                   [['TutorialInitialSave', 'initial_save'], ['bIsTutorialMap', 'hex', '01'],
                     # custom maps are real size only: no tabletop variant for Map size "Diorama" (Advanced options;
                     # the template's would be Soda Springs')
                     ['DioramaVariantMap', 'ref', 'None', 'None'], ['DioramaTutorialInitialSave', 'remove'],
@@ -507,7 +514,8 @@ def entry_spec(names, display, biome, stats):
 
 
 def build(spec, dem, game, out_dir, cancel, progress):
-    """spec: dict(name, slug, lat, lon, size_m, biome, treeline, valley, snow, acres, base_rc, seed, tg)
+    """spec: dict(name, slug, lat, lon, size_m, biome, treeline, valley, snow, acres, base_rc, seed, tg; osm: build in
+    the real trails and lifts from out_dir/osm.json)
     game: GameData. Returns dict(files=[...], manifest=..., preview=PIL image, stats=...)"""
     with BUILD_LOCK:
         return _build(spec, dem, game, Path(out_dir), cancel, progress)
@@ -524,7 +532,19 @@ def _build(spec, dem, game, out_dir, cancel, progress):
     H, fr = heights(dem, spec['size_m'])
     H = fit_edges(H, mf.wall_stations(gd['umap'], gd['uexp']))
     peak_m, base_m = fr.hmin + 65534 * fr.sc, fr.hmin
-    row, col = base_site(H, fr, *spec['base_rc'], radius=40)
+    pl = clear = avoid = None
+    if spec.get('osm'):                    # the real resort's trails and lifts (OpenStreetMap data saved with the map)
+        progress(0.01, 'Laying out the real trails and lifts...')
+        try:
+            osm = json.loads((out_dir / 'osm.json').read_bytes())
+        except (OSError, ValueError):
+            raise BuildError('This map\'s trail and lift data is missing. Create the map again.')
+        terrain = resort.Terrain(H, fr, spec['lat'], spec['lon'], spec['size_m'])
+        pl = resort.plan(osm, terrain, skip=spec.get('osm_skip', ()))
+        clear = resort.clear_mask(pl, spec['size_m'])
+        idx = np.minimum((np.arange(G) * fr.sp / clear[1]).astype(int), clear[0].shape[0] - 1)
+        avoid = clear[0][np.ix_(idx, idx)]
+    row, col = base_site(H, fr, *spec['base_rc'], radius=40, avoid=avoid)
     base_h = int(H[row, col])
     cancel.check()
 
@@ -533,7 +553,8 @@ def _build(spec, dem, game, out_dir, cancel, progress):
     recs, table, hdr_tail, counts = trees.forest(
         H, fr.hmin, fr.sp, fr.sc, spec['biome'], spec['treeline'], spec['valley'], donors, game.species(),
         game.biome_species(spec['biome']), spec['seed'], max_trees=int(spec.get('max_trees', trees.DEFAULT_TREES)),
-        tree_slope=float(spec.get('tree_slope', trees.TREE_SLOPE)), treeline_fade=float(spec.get('treeline_fade', 0.0)))
+        tree_slope=float(spec.get('tree_slope', trees.TREE_SLOPE)), treeline_fade=float(spec.get('treeline_fade', 0.0)),
+        clear=clear)
     obs_ua, obs_ue = obstacles_assets(gd, recs, table, hdr_tail, fr)
     obs_ua = names.rename(obs_ua, 'obs', '/Game/Generated/DA_BakedObstacles_' + DONOR_MAP, names.p_obs)
     cancel.check()
@@ -550,6 +571,8 @@ def _build(spec, dem, game, out_dir, cancel, progress):
 
     progress(0.25, 'Starting save...')
     is_ue = initial_save(gd, fr, spec['tg'], row, col, base_h, names.p_map, names.mapn.encode())
+    if pl:
+        is_ue = resort.add_to_save(is_ue, pl, terrain)
     is_ua = names.rename(lh.set_export_size(gd['is_ua'], len(is_ue)), 'is', '/Game/InitialSaves/' + IS_OLD, names.p_is)
 
     shell = {}
@@ -600,6 +623,7 @@ def _build(spec, dem, game, out_dir, cancel, progress):
     log.info('built %s (%s) in %.1f s: peak %d ft, vertical %d ft, %d trees', spec['name'], names.slug, time.time() - t0,
              peak_ft, vert_ft, len(recs) // trees.STRIDE)
     progress(1.0, 'Map built')
-    return dict(files=produced, entry=entry_spec(names, spec['name'], spec['biome'], stats), preview=img,
+    return dict(files=produced, entry=entry_spec(names, spec['name'], spec['biome'], stats, start_save=bool(pl)), preview=img,
                 stats=dict(peak_ft=peak_ft, vert_ft=vert_ft, base_ft=int(round(base_m * 3.28084)),
-                           trees=len(recs) // trees.STRIDE, species=counts, base_rc=[row, col], snow_piles=bool(shell)))
+                           trees=len(recs) // trees.STRIDE, species=counts, base_rc=[row, col], snow_piles=bool(shell),
+                           lifts=len(pl['lifts']) if pl else 0, trails=len(pl['trails']) if pl else 0))

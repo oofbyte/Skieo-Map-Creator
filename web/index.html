@@ -82,6 +82,10 @@
             <label class="field">Name<input id="name" maxlength="40" placeholder="e.g. Mount Hood Meadows" spellcheck="false"></label>
             <div class="field-err hidden" id="nameErr"></div>
             <div class="meta hidden" id="nameHint">Names can use letters A–Z, numbers, spaces and - ' . &amp; ( ) — accents are turned into plain letters.</div>
+            <div class="row-label osm-row" id="osmRow"><label for="osm">Real trails and lifts</label>
+              <label class="switch" title="Build the resort's real lifts and named trails in, from OpenStreetMap"><input type="checkbox" id="osm"><span class="knob"></span></label></div>
+            <div class="meta">Builds the real ski area into the map from OpenStreetMap: every lift as the closest lift in the game and every trail with its name and rating, so a new game starts with them.</div>
+            <div id="osmInfo" class="hidden"></div>
             <label class="field">Biome<select id="biome"></select></label>
             <div class="meta" id="biomeHint"></div>
             <div class="row-label"><label for="treeline">Treeline</label><span><span class="numval"><input class="num-in" id="tlOut" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Treeline" title="Type a value, then press Enter"><span class="num-unit" id="tlUnit"></span></span> <button class="link" id="tlAuto">auto</button></span></div>
