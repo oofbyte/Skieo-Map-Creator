@@ -427,8 +427,20 @@ def drive(win):
     win.destroy()
 
 
+def real_creator_open():
+    """a real creator is running (it holds main.single_instance's mutex) on the same app data, so the same browser
+    profile: release_webview_profile() would stop its WebView2 processes and leave its window blank"""
+    h = ctypes.windll.kernel32.OpenMutexW(0x00100000, False, 'Local\\SkiEOMapCreator')     # SYNCHRONIZE
+    if not h:
+        return False
+    ctypes.windll.kernel32.CloseHandle(h)
+    return paths.APP_DIR == Path.home() / 'AppData' / 'Local' / paths.APP_DIR.name
+
+
 def main():
     import webview
+    if real_creator_open():
+        sys.exit('A Map Creator is open on this PC: close it first, or set LOCALAPPDATA to a scratch folder.')
     paths.setup_logging()
     release_webview_profile()
     if SCEN == '3d-offline':
