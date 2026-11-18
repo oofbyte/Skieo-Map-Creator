@@ -5,6 +5,9 @@ yes, the window shows a progress page while the new exe is downloaded next to th
 release's SHA256SUMS.txt; then it takes this exe's name (a running exe can be renamed, not overwritten: this one
 becomes <name>.old.exe, removed on the next start) and is started once this window has closed. Any failure leaves this
 version as it was and the window goes on to the app. Only for the packaged exe, never when run from the source.
+
+On macOS the app is not replaced in place (an app bundle is a folder, and macOS checks a downloaded one before it first
+runs): when a newer release has the macOS app attached, the player is asked and the release page opens.
 """
 import glob
 import hashlib
@@ -13,7 +16,6 @@ import json
 import logging
 import os
 import re
-import subprocess
 import sys
 import threading
 import time
@@ -21,14 +23,18 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from . import APP_NAME, VERSION, net
+from . import APP_NAME, VERSION, net, system
 
 log = logging.getLogger(__name__)
 REPO = 'oofbyte/Skieo-Map-Creator'
 API = 'https://api.github.com/repos/%s/releases/' % REPO
 DOWNLOADS = 'https://github.com/%s/releases/download/' % REPO
+PAGE_URL = 'https://github.com/%s/releases/latest' % REPO
 HOSTS = ('github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com')   # where they redirect
 EXE, SUMS = 'SkiEO-Map-Creator.exe', 'SHA256SUMS.txt'
+MAC_ZIP = 'SkiEO-Map-Creator-macOS.zip'
+IN_PLACE = not system.MAC                     # the new version replaces this one by itself (else: the release page)
+ASSET = EXE if IN_PLACE else MAC_ZIP          # what a release must have attached for this platform
 MIN_MB = 20                                   # anything smaller is not the app
 
 
@@ -48,7 +54,7 @@ def release(tag=None):
                            accept='application/vnd.github+json'))
     v = _version(r.get('tag_name'))
     files = {a.get('name'): a for a in r.get('assets') or ()}
-    exe, sums = files.get(EXE), files.get(SUMS)
+    exe, sums = files.get(ASSET), files.get(SUMS)
     if not (v and exe and sums) or r.get('draft') or r.get('prerelease'):
         return None
     for a in (exe, sums):                     # only this repository's own release files
@@ -104,6 +110,9 @@ def notes(text, limit=700):
 
 def prompt(rel):
     n = notes(rel['notes'])
+    if not IN_PLACE:
+        return ('%s %s is out (you have %s).%s\n\nOpen the download page now? Download %s there, unzip it and put the '
+                'new app in place of this one.' % (APP_NAME, rel['version'], VERSION, '\n\n' + n if n else '', MAC_ZIP))
     return ('%s %s is out (you have %s).%s\n\nUpdate now? The new version (%d MB) is downloaded from GitHub, checked, '
             'and started in place of this one.' % (APP_NAME, rel['version'], VERSION, '\n\n' + n if n else '',
                                                    max(1, rel['size'] >> 20)))
@@ -233,8 +242,7 @@ def start(exe, *args):
     one's unpacked files, which are deleted as it exits)"""
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith(('_MEI', '_PYI'))}
     env['PYINSTALLER_RESET_ENVIRONMENT'] = '1'
-    subprocess.Popen([str(exe), *args], cwd=str(Path(exe).parent), env=env, close_fds=True,
-                     creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+    system.start_detached([str(exe), *args], str(Path(exe).parent), env)
 
 
 def undo(exe, old, why):
@@ -251,7 +259,7 @@ def undo(exe, old, why):
 def cleanup():
     """remove what an update left next to this exe: the replaced copy (once it has exited) and an unfinished
     download (in the background: the replaced copy takes a few seconds to exit)"""
-    if not getattr(sys, 'frozen', False):
+    if not getattr(sys, 'frozen', False) or not IN_PLACE:
         return
     exe = Path(sys.executable)
     left = [exe.with_name(EXE + '.download')]           # first: nothing is downloading yet

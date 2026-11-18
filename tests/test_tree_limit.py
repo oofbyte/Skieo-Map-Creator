@@ -8,6 +8,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from skieo_creator import install  # noqa: E402
 
+MAC = install.system.MAC
+install.system.MAC = False                # the Windows exe handling first; macOS at the end
+
 
 def fake_exe(limit):
     """a PE with .text (raw 0x400, RVA 0x1000) holding "cmp ecx, limit ; jbe ... lea rdx, [message]" and .rdata (raw
@@ -68,5 +71,10 @@ with tempfile.TemporaryDirectory() as t:
     assert not install.tree_mod_on(t)
     (mod / 'enabled.txt').write_bytes(b'')
     assert install.tree_mod_on(t)
+
+# macOS: the game there was never patched, so its files are never touched (and Experimental mode is off)
+install.system.MAC = True
+assert run(install.OLD_TREE_PATCH) == (None, install.OLD_TREE_PATCH, True)
+install.system.MAC = MAC
 
 print('tree limit: OK')

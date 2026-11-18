@@ -3,7 +3,6 @@ import ctypes
 import locale
 import logging
 import os
-import platform
 import shutil
 import subprocess
 import sys
@@ -13,7 +12,7 @@ import traceback
 import urllib.request
 import webbrowser
 
-from . import APP_NAME, VERSION, paths, update
+from . import APP_NAME, VERSION, paths, system, update
 
 log = logging.getLogger('skieo_creator')
 WEBVIEW2_GUID = '{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
@@ -27,17 +26,53 @@ BLANK = ('The Map Creator window stays empty: Microsoft Edge WebView2, which dra
          'Repairing WebView2 usually fixes this: Windows Settings > Apps > Microsoft Edge WebView2 Runtime > Modify. '
          'If it is not listed there, install it from Microsoft. Open the download page now?\n\n'
          'Details were written to:\n%s')
+BLANK_MAC = ('The Map Creator window stays empty: its page %s. Close the Map Creator and start it again; a security '
+             'program that blocks local connections (127.0.0.1) can cause this.\n\nDetails were written to:\n%s')
+
+MAC_DIALOG = '''on run argv
+  set {t, kind, yesno} to argv
+  if yesno is "1" then
+    set r to display dialog t with title "%s" buttons {"No", "Yes"} default button "Yes" with icon (kind as integer)
+  else
+    set r to display dialog t with title "%s" buttons {"OK"} default button "OK" with icon (kind as integer)
+  end if
+  return button returned of r
+end run''' % (APP_NAME, APP_NAME)
 
 
 def message(text, flags=MB_OK | MB_ICONERROR):
+    if system.MAC:
+        return _mac_message(text, flags)
     try:
         return ctypes.windll.user32.MessageBoxW(None, text, APP_NAME, flags)
     except Exception:
         return 0
 
 
+def _mac_message(text, flags):
+    """the same message box on macOS (osascript; the text is an argument, never part of the script)"""
+    icon = 0 if flags & 0x30 == MB_ICONERROR else (2 if flags & 0x30 == MB_ICONWARNING else 1)  # stop / caution / note
+    try:
+        r = subprocess.run(['osascript', '-e', MAC_DIALOG, text, str(icon), '1' if flags & MB_YESNO else '0'],
+                           capture_output=True, text=True, timeout=3600)
+    except (OSError, subprocess.SubprocessError):
+        return 0
+    return IDYES if r.stdout.strip() == 'Yes' else 0
+
+
 def single_instance():
     """True if this is the only running copy; otherwise brings the other window to the front"""
+    if system.MAC:                                         # macOS brings an app that is open already to the front
+        import fcntl                                       # itself; this is for the copy run from the source
+        paths.ensure_dirs()
+        f = open(paths.APP_DIR / '.instance.lock', 'w')
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            f.close()
+            return False
+        single_instance.handle = f
+        return True
     k32 = ctypes.windll.kernel32
     handle = k32.CreateMutexW(None, False, 'Local\\SkiEOMapCreator')
     if k32.GetLastError() == 183:                          # ERROR_ALREADY_EXISTS
@@ -48,6 +83,18 @@ def single_instance():
         return False
     single_instance.handle = handle                        # keep the mutex for the process lifetime
     return True
+
+
+def release_instance():
+    """before starting the next copy (update, second try): it must not find this one still running"""
+    h = getattr(single_instance, 'handle', None)
+    if h is None:
+        return
+    if system.MAC:
+        h.close()
+    else:
+        ctypes.windll.kernel32.CloseHandle(h)
+    single_instance.handle = None
 
 
 def webview2_version():
@@ -158,8 +205,11 @@ def watch_load(win, url, failure, retry, safe, done, settings):
         if win.events.closed.is_set():
             return
     why = _why(failure)
-    log.error('the window stayed blank: WebView2 %s; the page server %s', why, _probe(url))
-    if not safe:
+    log.error('the window stayed blank: %s %s; the page server %s', 'WebKit' if system.MAC else 'WebView2', why,
+              _probe(url))
+    if system.MAC:                                         # WebKit is part of macOS: nothing to repair or retry
+        message(BLANK_MAC % (why, paths.LOGS / 'creator.log'), MB_OK | MB_ICONWARNING)
+    elif not safe:
         done['retry'] = True
     elif message(BLANK % (why, paths.LOGS / 'creator.log'), MB_YESNO | MB_ICONWARNING | MB_SETFOREGROUND) == IDYES:
         webbrowser.open(WEBVIEW2_URL)
@@ -177,6 +227,11 @@ def restart(*args):
 
 def _language():
     try:
+        if system.MAC:                                     # an app started from Finder has no LANG
+            from Foundation import NSLocale
+            return str(NSLocale.currentLocale().localeIdentifier())
+        if not system.WINDOWS:
+            return locale.getlocale()[0] or os.environ.get('LANG') or '?'
         return locale.windows_locale.get(ctypes.windll.kernel32.GetUserDefaultUILanguage(), '?')
     except Exception:
         return '?'
@@ -191,33 +246,37 @@ def main():
     sys.excepthook = _excepthook
     threading.excepthook = lambda a: _excepthook(a.exc_type, a.exc_value, a.exc_traceback)
     retry = SAFE_START in sys.argv
-    log.info('%s %s starting (frozen=%s%s) on Windows %s, language %s', APP_NAME, VERSION, getattr(sys, 'frozen', False),
-             ', second try after a blank window' if retry else '', platform.version(), _language())
-    if os.name != 'nt':
-        message('The Map Creator runs on Windows only.')
+    log.info('%s %s starting (frozen=%s%s) on %s, language %s', APP_NAME, VERSION, getattr(sys, 'frozen', False),
+             ', second try after a blank window' if retry else '', system.os_version(), _language())
+    if not (system.WINDOWS or system.MAC):
+        message('The Map Creator runs on Windows and macOS only.')
         return 1
     if not single_instance():
         return 0
-    wv2 = webview2_version()
-    log.info('WebView2 runtime: %s', wv2)
-    if not wv2:
-        if message('The Map Creator needs the Microsoft Edge WebView2 Runtime, which is not installed on this PC.\n\n'
-                   'It is a free, small download from Microsoft. Open the download page now?',
-                   MB_YESNO | MB_ICONWARNING) == IDYES:
-            webbrowser.open(WEBVIEW2_URL)
-        return 1
     safe = retry or bool(paths.Settings().get('safe_start'))
     profile = paths.WEBVIEW_SAFE if safe else paths.WEBVIEW
-    release_webview_profile(profile)
-    if retry:
-        shutil.rmtree(profile, ignore_errors=True)         # a fresh browser profile
-    if safe:
-        os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = NO_GPU     # added to pywebview's own arguments
-        log.info('safe start: own browser profile, graphics acceleration off')
+    if system.WINDOWS:
+        wv2 = webview2_version()
+        log.info('WebView2 runtime: %s', wv2)
+        if not wv2:
+            if message('The Map Creator needs the Microsoft Edge WebView2 Runtime, which is not installed on this PC.\n\n'
+                       'It is a free, small download from Microsoft. Open the download page now?',
+                       MB_YESNO | MB_ICONWARNING) == IDYES:
+                webbrowser.open(WEBVIEW2_URL)
+            return 1
+        release_webview_profile(profile)
+        if retry:
+            shutil.rmtree(profile, ignore_errors=True)     # a fresh browser profile
+        if safe:
+            os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = NO_GPU     # added to pywebview's own arguments
+            log.info('safe start: own browser profile, graphics acceleration off')
     update.cleanup()                                       # what an earlier update left next to the exe
     rel = None if retry else update.newer()                # a newer release on GitHub: ask before the window opens
     if rel and message(update.prompt(rel), MB_YESNO | MB_ICONINFORMATION) != IDYES:
         log.info('update to %s: not now', rel['version'])
+        rel = None
+    if rel and not update.IN_PLACE:                        # macOS: the player downloads the new app from the release
+        webbrowser.open(rel['page'] or update.PAGE_URL)
         rel = None
     done = {}
     try:
@@ -232,12 +291,13 @@ def main():
                                     js_api=bridge, width=1440, height=900, min_size=(1100, 680),
                                     background_color='#0b1118', text_select=False)
         bridge._attach(win)
-        win.events.shown += style_titlebar
+        if system.WINDOWS:
+            win.events.shown += style_titlebar
         if rel:
             task, args = update.run, (win, rel, url, done, message)
         else:
             task, args = watch_load, (win, url, failure, retry, safe, done, bridge._settings)
-        webview.start(task, args, gui='edgechromium', private_mode=False, storage_path=str(profile),
+        webview.start(task, args, gui='cocoa' if system.MAC else 'edgechromium', private_mode=False, storage_path=str(profile),
                       debug='--debug' in sys.argv)
     except Exception:
         log.critical('window failed:\n%s', traceback.format_exc())
@@ -245,7 +305,7 @@ def main():
                 % (paths.LOGS / 'creator.log'))
         return 1
     if done.get('exe'):                                    # updated: the new copy takes over from here
-        ctypes.windll.kernel32.CloseHandle(single_instance.handle)
+        release_instance()
         try:
             update.start(done['exe'])
             log.info('started %s', done['exe'])
@@ -253,7 +313,7 @@ def main():
             log.error('the new version would not start: %s', ex)
             message(update.undo(done['exe'], done['old'], ex))
     elif done.get('retry'):                                # blank window: a second try (watch_load)
-        ctypes.windll.kernel32.CloseHandle(single_instance.handle)
+        release_instance()
         try:
             restart(SAFE_START)
             log.info('started again for a second try')

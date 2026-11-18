@@ -31,6 +31,32 @@ def api(tag='v9.9.9', **kw):
     return json.dumps(r).encode()
 
 
+
+if not U.IN_PLACE:
+    # ---- macOS: no exe swap; a newer release with the macOS app attached is offered, and its page opens
+    real_get = net.get
+    try:
+        zip_ = dict(name=U.MAC_ZIP, size=90 << 20, browser_download_url=DL + U.MAC_ZIP)
+        sums = dict(name=U.SUMS, size=88, browser_download_url=DL + U.SUMS)
+        net.get = lambda url, **kw: api(assets=[zip_, sums])
+        rel = U.release()
+        assert rel['version'] == '9.9.9' and rel['exe'] == DL + U.MAC_ZIP and rel['page'].endswith('v9.9.9'), rel
+        net.get = lambda url, **kw: api()
+        assert U.release() is None, 'a release with only the Windows exe: nothing to offer on macOS'
+        net.get = lambda url, **kw: api(assets=[zip_, dict(sums, browser_download_url='https://evil.example/s')])
+        assert U.release() is None, 'only this repository\'s own release files'
+    finally:
+        net.get = real_get
+    text = U.prompt(dict(version='9.9.9', notes='- **Trails**: no loops', size=90 << 20))
+    assert 'download page' in text and U.MAC_ZIP in text and 'Trails: no loops' in text, text
+    sys.frozen = True
+    try:
+        U.cleanup()                           # nothing next to the app to clean up
+    finally:
+        del sys.frozen
+    print('update (macOS): all checks passed')
+    sys.exit(0)
+
 real_get = net.get
 try:
     net.get = lambda url, **kw: api()

@@ -8,10 +8,12 @@ Software
 --------
 * Leaflet 1.9.4 (BSD 2-Clause) -- https://leafletjs.com -- web/vendor/leaflet/LICENSE
 * three.js r160 with OrbitControls (MIT) -- https://threejs.org -- web/vendor/three/LICENSE
-* retoc (MIT) -- https://github.com/trumank/retoc -- tools/retoc-LICENSE
+* retoc v0.1.5 (MIT) -- https://github.com/trumank/retoc -- tools/retoc-LICENSE
+  The release builds for Windows (x86_64-pc-windows-msvc) and macOS (aarch64-apple-darwin), unchanged.
   retoc downloads the Oodle compression library on first use.
-* pywebview (BSD 3-Clause), pythonnet (MIT), NumPy (BSD 3-Clause), Pillow (MIT-CMU), tifffile (BSD 3-Clause), Python (PSF)
-* Microsoft Edge WebView2 Runtime (installed on Windows; not included)
+* pywebview (BSD 3-Clause), pythonnet (MIT, Windows), PyObjC (MIT, macOS), NumPy (BSD 3-Clause), Pillow (MIT-CMU),
+  tifffile (BSD 3-Clause), Python (PSF)
+* Microsoft Edge WebView2 Runtime (installed on Windows; not included); WebKit (part of macOS)
 
 Fonts (SIL Open Font License 1.1, see web/fonts/*-OFL.txt)
 -----------------------------------------------------------

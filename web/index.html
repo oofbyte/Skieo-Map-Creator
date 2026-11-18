@@ -99,11 +99,13 @@
             <div class="meta">The steepest ground that still gets trees. Cliffs steeper than this stay bare rock, like on the game's own maps.</div>
             <div class="row-label"><label for="trees">Max trees</label><span class="numval"><input class="num-in" id="treesOut" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Max trees" title="Type a value, then press Enter"><span class="num-unit" id="treesUnit"></span></span></div>
             <input type="range" id="trees" min="25000" max="1500000" step="1000" value="250000">
-            <div class="meta">The game slows down with every tree it draws, so a map has at most 1.5 million trees and canopies (a broadleaf tree's canopy counts as a tree), about what the game's own biggest maps have (Whistler: 1.42 million); a smaller map tops out at the game's own forest density (about 19,000 per km²). When the map's whole forest would be more, it keeps the trees round the lifts and trails, where you play, thinner further away, and the trees it keeps grow a size larger so it still looks full. Fewer trees load faster and run better on slower PCs.</div>
+            <div class="meta">The game slows down with every tree it draws, so a map has at most 1.5 million trees and canopies (a broadleaf tree's canopy counts as a tree), about what the game's own biggest maps have (Whistler: 1.42 million); a smaller map tops out at the game's own forest density (about 19,000 per km²). When the map's whole forest would be more, it keeps the trees round the lifts and trails, where you play, thinner further away, and the trees it keeps grow a size larger so it still looks full. Fewer trees load faster and run better on slower computers.</div>
             <div class="warn">Maps with many trees take a while to fully load in game: the forest fills in square by square and the game runs slowly until it is done.</div>
+            <div id="expBox">
             <div class="row-label"><label for="expTrees">Experimental mode</label>
               <label class="switch" title="Allow more trees than the game's own maps have (slower)"><input type="checkbox" id="expTrees"><span class="knob"></span></label></div>
             <div class="meta">More than 1.5 million trees, up to the game's full forest density for the map's size (7.5 million at 20 km). Every tree costs frame rate: switching it on tells you how much.</div>
+            </div>
             <div class="warn hidden" id="expWarn">Experimental mode is on. Above 1.5 million trees the game runs slower, loads slower and uses more memory, and it shows the trees only with Oof's Tree Limit turned on in Z's Mod Manager. Maps you share run just as slowly for other players.</div>
             <details>
               <summary>More options</summary>

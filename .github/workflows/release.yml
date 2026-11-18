@@ -1,5 +1,6 @@
-# Builds SkiEO-Map-Creator.exe on GitHub's servers from a release's tag and attaches it to that release, with its
-# SHA-256 and a signed build provenance attestation (check it with: gh attestation verify <exe> --repo <owner>/<repo>).
+# Builds SkiEO-Map-Creator.exe (Windows) and SkiEO-Map-Creator-macOS.zip (the macOS app) on GitHub's servers from a
+# release's tag and attaches them to that release, with their SHA-256 and signed build provenance attestations (check
+# one with: gh attestation verify <file> --repo <owner>/<repo>).
 # To release: bump VERSION in skieo_creator/__init__.py and packaging/version_info.txt and add a CHANGELOG.md section,
 # then on GitHub: Releases -> Draft a new release -> new tag vX.Y.Z -> Publish (the description can stay empty; it is
 # filled from CHANGELOG.md). Or from a terminal: gh release create vX.Y.Z --title vX.Y.Z --notes ""
@@ -66,8 +67,11 @@ jobs:
           m = re.search(rf'^## {re.escape(tag)}\b.*?\n(.*?)(?=^## |\Z)', log, re.S | re.M) if tag else None
           run = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           notes = (m.group(1).strip() + '\n\n' if m else '') + (
-              '### Download\n**SkiEO-Map-Creator.exe**: one file, no install. Windows may warn because it is unsigned: '
-              'More info, then Run anyway.\n\n'
+              '### Download\n**SkiEO-Map-Creator.exe** (Windows 10/11): one file, no install. Windows may warn because '
+              'it is unsigned: More info, then Run anyway.\n\n'
+              '**SkiEO-Map-Creator-macOS.zip** (Macs with Apple silicon, like the game): unzip it and move '
+              '"SkiEO Map Creator.app" to Applications. It is not notarized: the first time, macOS refuses to open it; '
+              'then System Settings > Privacy & Security > Open Anyway.\n\n'
               f'### Verify\nSHA-256: `{h}`\n\n'
               f'Built by GitHub Actions from this tag ([build log]({run})). Check the build attestation:\n'
               '```\ngh attestation verify SkiEO-Map-Creator.exe --repo ${{ github.repository }}\n```\n'
@@ -95,3 +99,49 @@ jobs:
           path: |
             dist/SkiEO-Map-Creator.exe
             dist/SHA256SUMS.txt
+
+  # The macOS app (Apple silicon, as the game), after the Windows job: it adds its zip's line to that job's
+  # SHA256SUMS.txt on the release. Check its attestation: gh attestation verify SkiEO-Map-Creator-macOS.zip --repo ...
+  build-mac:
+    needs: build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Build the app
+        run: |
+          python packaging/make_icon.py
+          python -m PyInstaller --noconfirm --clean --distpath dist --workpath build packaging/SkiEO-Map-Creator.spec
+          codesign --verify --deep --strict "dist/SkiEO Map Creator.app"
+          ditto -c -k --keepParent "dist/SkiEO Map Creator.app" dist/SkiEO-Map-Creator-macOS.zip
+          cd dist && shasum -a 256 SkiEO-Map-Creator-macOS.zip | tee SHA256SUMS-macOS.txt
+
+      - uses: actions/attest@v4
+        with:
+          subject-path: dist/SkiEO-Map-Creator-macOS.zip
+
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir sums
+          gh release download "$TAG" --pattern SHA256SUMS.txt --dir sums --repo "${{ github.repository }}"
+          cat dist/SHA256SUMS-macOS.txt >> sums/SHA256SUMS.txt
+          gh release upload "$TAG" dist/SkiEO-Map-Creator-macOS.zip sums/SHA256SUMS.txt --clobber --repo "${{ github.repository }}"
+
+      - name: Keep the test build
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v7
+        with:
+          name: SkiEO-Map-Creator-macOS
+          path: |
+            dist/SkiEO-Map-Creator-macOS.zip
+            dist/SHA256SUMS-macOS.txt

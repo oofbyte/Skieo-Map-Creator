@@ -19,7 +19,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from . import paths
+from . import paths, system
 from .engine import legacy_header as lh
 from .engine import levelentry as le
 
@@ -54,18 +54,7 @@ def _vdf_paths(text):
 
 
 def steam_roots():
-    roots = []
-    if os.name == 'nt':
-        import winreg
-        for hive, key, val in ((winreg.HKEY_CURRENT_USER, r'Software\Valve\Steam', 'SteamPath'),
-                               (winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\WOW6432Node\Valve\Steam', 'InstallPath')):
-            try:
-                with winreg.OpenKey(hive, key) as k:
-                    roots.append(Path(winreg.QueryValueEx(k, val)[0]))
-            except OSError:
-                pass
-    roots.append(Path(r'C:\Program Files (x86)\Steam'))
-    return roots
+    return system.steam_roots()
 
 
 def _acf(path):
@@ -93,7 +82,7 @@ def find_game():
                 continue
             seen.add(str(lib).lower())
             info = _acf(lib / 'steamapps' / ('appmanifest_%s.acf' % APP_ID))
-            game = lib / 'steamapps' / 'common' / info.get('installdir', '')
+            game = system.game_folder(lib / 'steamapps' / 'common' / info.get('installdir', ''))
             if info.get('installdir') and (game / 'SkiResortSimulator' / 'Content' / 'Paks').is_dir():
                 return game, info.get('buildid')
     return None, None
@@ -101,13 +90,13 @@ def find_game():
 
 def manifest(game, app=APP_ID):
     """Steam's app manifest of `app` when it is the game in this folder, else {}"""
-    folder = Path(game).resolve()
+    folder = system.install_dir(Path(game).resolve())
     info = _acf(folder.parent.parent / ('appmanifest_%s.acf' % app))
     return info if info.get('installdir', '').lower() == folder.name.lower() else {}
 
 
 def is_demo(game):
-    return bool(manifest(game, DEMO_APP_ID)) or Path(game).name.lower() == 'skieogame_demo'
+    return bool(manifest(game, DEMO_APP_ID)) or system.install_dir(game).name.lower() == 'skieogame_demo'
 
 
 def is_valid_game(game):
@@ -153,6 +142,8 @@ def _process_names():
 def game_running():
     """Is Ski-E-O running? Asks Windows directly: parsing tasklist's text broke on non-English Windows (its output is
     in the console code page, e.g. a German u-umlaut is byte 0x81 there, which the locale codec can't decode)."""
+    if system.MAC:
+        return system.game_running_mac()
     if os.name != 'nt':
         return False
     try:
@@ -174,6 +165,8 @@ def game_running():
 GAME_TREE_LIMIT = 1500000
 OLD_TREE_PATCH = 20000000       # what versions 1.3 to 1.9 wrote over it (always this value)
 TREE_MOD = 'OofsTreeLimit'      # the mod's folder in <game>/mods
+TREES_UNCAPPED = not system.MAC      # Oof's Tree Limit can raise the game's limit (a Windows mod: Experimental mode's
+                                    # many trees show in the game); on macOS maps stay within 1.5M
 # cmp r32, imm32 ; jbe ok (short in the demo, near in the full game) ... lea rdx, [the "... over the bake cap" message]
 _TREE_CHECK = re.compile(rb'\x81[\xF8-\xFF](....)(?:\x76.|\x0F\x86....)', re.S)
 _LEA_RDX = re.compile(rb'\x48\x8D\x15(....)', re.S)
@@ -202,7 +195,10 @@ def _tree_check_at(data):
 def restore_tree_limit(folder):
     """Puts the game's own tree limit back (game closed) where an older version raised it in skieogame.exe: only that
     value, so the exe is Steam's again. Checked whenever the app looks at the game; cached per exe version. Returns the
-    limit in the exe (None: unknown, logged once)."""
+    limit in the exe (None: unknown, logged once). Windows only (the macOS game was never patched).
+    """
+    if system.MAC:
+        return None
     exe = Path(folder) / 'SkiResortSimulator' / 'Binaries' / 'Win64' / GAME_EXE
     key = (str(exe),)
     try:
@@ -365,7 +361,7 @@ class Game:
             for f in reg:
                 f.unlink(missing_ok=True)
             return
-        work = Path(tempfile.mkdtemp(prefix='.skimap_', dir=self.folder / 'SkiResortSimulator'))
+        work = Path(tempfile.mkdtemp(prefix='.skimap_', dir=system.work_root(self.folder)))
         try:
             ua, ue, so = extract_registry(self.paks, work)
             for m in maps:

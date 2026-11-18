@@ -51,8 +51,8 @@ For players, see the [README](../README.md).
 4. **Pack and install**: retoc `to-zen` packs a `ZZZ_MC_<name>_P` pak. `install.py` adds the map to the game's
    map list (`ZZZ_Registry_P`) and copies it into `Content/Paks/~mods`.
 
-The window is a local web UI (`web/`: Leaflet map, three.js 3D preview) shown by pywebview / WebView2. `server.py`
-serves it on 127.0.0.1, with a token-protected tile proxy on its own port.
+The window is a local web UI (`web/`: Leaflet map, three.js 3D preview) shown by pywebview: WebView2 on
+Windows, WebKit on macOS. `server.py` serves it on 127.0.0.1, with a token-protected tile proxy on its own port.
 
 Mods are not the Map Creator's business any more: they come from Z's Mod Loader. The Mod Library of versions 1.2 to
 1.8 (removed in 1.9; its code is in the git history) installed UE4SS, Lua mods and lift and building packs into the
@@ -63,7 +63,7 @@ game's own outside the map folders.
 
 ## Run from source
 
-Windows 10/11, Python 3.12, Ski-E-O! installed through Steam.
+Windows 10/11 or macOS on Apple silicon, Python 3.12, Ski-E-O! installed through Steam.
 
 ```
 py -3.12 -m venv .venv
@@ -71,13 +71,40 @@ py -3.12 -m venv .venv
 .venv\Scripts\python run.py
 ```
 
-## Build the exe
+On macOS:
+
+```
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python run.py
+```
+
+## Build the exe and the macOS app
 
 ```
 packaging\build.bat
 ```
 
 This makes `dist\SkiEO-Map-Creator.exe`, a single file that bundles `web/`, `data/` and `tools/retoc.exe`.
+
+On macOS, `packaging/build_mac.sh` makes `dist/SkiEO Map Creator.app` (arm64, ad-hoc signed by PyInstaller, not
+notarized) with `tools/retoc`, and zips it as `dist/SkiEO-Map-Creator-macOS.zip`.
+
+## macOS
+
+What differs between the platforms is in `skieo_creator/system.py`. On macOS:
+
+- The game folder is `<Steam>/steamapps/common/skieogame/Ski-E-O.app/Contents/UE`, so every
+  `SkiResortSimulator/...` path is the same as on Windows (the paks are `SkiResortSimulator-Mac.*`). Maps go into
+  `Content/Paks/~mods` inside the game's app bundle; the game loads them from there. Work folders (hard links to the
+  game's containers) go next to the bundle, never inside it.
+- `tools/retoc` is retoc v0.1.5's `aarch64-apple-darwin` release build, the same version as `tools/retoc.exe`. Its
+  Oodle library (`liboo2coremac64.2.9.10.dylib`) downloads next to the copy in the app folder on first use.
+- Experimental mode is off and hidden (`install.TREES_UNCAPPED`): Oof's Tree Limit, which lets the game show more
+  than 1.5 million trees, is a Windows mod. `restore_tree_limit` has nothing to do (the macOS game was never patched).
+- The app is not replaced in place on update: a newer release with `SkiEO-Map-Creator-macOS.zip` is offered and its
+  page opens.
+- The old Mod Library never shipped for macOS, so `oldmods.py` doesn't run there.
 
 ## The map template
 
@@ -152,11 +179,11 @@ python packaging/make_save_template.py <a .sav with a ticket office> <out>\SkiRe
 
 | Path | What |
 |---|---|
-| `skieo_creator/` | app: `main.py` (window), `api.py` (calls from the page), `builder.py`, `trees.py`, `shells.py`, `dem.py`, `install.py`, `oldmods.py`, `update.py` ... |
+| `skieo_creator/` | app: `main.py` (window), `api.py` (calls from the page), `system.py` (Windows / macOS differences), `builder.py`, `trees.py`, `shells.py`, `dem.py`, `install.py`, `oldmods.py`, `update.py` ... |
 | `skieo_creator/engine/` | writers for the cooked map data (heightmaps, providers, bounds, collision, frame, headers, materials), the terrain material package (`terrain_material.py`), the check of the game's map layout (`stockcheck.py`) |
 | `web/` | the UI (HTML / CSS / JS) and vendored Leaflet + three.js |
 | `data/` | `map_template.zip`, the map template (see above); the cooked snow-shell template; `save_template.bin` and `resort_templates.bin`, blank save records (from `packaging/make_save_template.py` and `make_resort_templates.py`); the tree meshes, patterns and forest statistics |
-| `tools/` | retoc.exe (MIT, https://github.com/trumank/retoc) and its license, both shipped in the exe. Nothing else goes here: `verify_exe.py` fails the release build on any file in `tools/`, `web/` or `data/` the exe doesn't ship |
+| `tools/` | retoc.exe (MIT, https://github.com/trumank/retoc) and its license, both shipped in the exe; retoc, the macOS build, shipped in the macOS app. Nothing else goes here: `verify_exe.py` fails the release build on any file in `tools/`, `web/` or `data/` the exe doesn't ship (but `tools/retoc`) |
 | `packaging/` | PyInstaller spec, build script, icon, version info, credits (`THIRD-PARTY.txt`), `verify_exe.py`; developer scripts the exe doesn't ship, such as `make_tree_patterns.py` and `make_tree_meshes.py` |
 | `docs/` | this file and the README's screenshots |
 | `tests/ui_drive.py` | scripted UI sessions with screenshots (`search`, `3d`, `3d-offline`, `numbox`, `osm`, ...) |
@@ -168,7 +195,7 @@ python packaging/make_save_template.py <a .sav with a ticket office> <out>\SkiRe
 | `tests/test_map_package.py` | self-check that a map package holds only a map, with stand-in containers made from the game's files (skipped without the game) |
 | `tests/test_oldmods.py` | self-check of taking out what the old Mod Library installed, in stand-in game folders |
 | `tests/test_main.py` | self-check of the empty-window guard (a second try, then a message) with a stand-in window |
-| `.github/workflows/release.yml` | builds, checks, hashes and attests the exe and attaches it to each release |
+| `.github/workflows/release.yml` | builds, checks, hashes and attests the exe and the macOS app and attaches them to each release |
 
 ## Releasing
 
@@ -177,4 +204,6 @@ python packaging/make_save_template.py <a .sav with a ticket office> <out>\SkiRe
 2. On GitHub: **Releases → Draft a new release**, create the tag `vX.Y.Z`, and publish. The description can stay
    empty.
 3. The workflow builds the exe from that tag, checks it against the source, and attaches it and `SHA256SUMS.txt` to
-   the release, with the notes from `CHANGELOG.md`. It stops if the tag doesn't match the versions in step 1.
+   the release, with the notes from `CHANGELOG.md`. It stops if the tag doesn't match the versions in step 1. A
+   second job then builds the macOS app on a macOS runner, attaches `SkiEO-Map-Creator-macOS.zip` and adds its line
+   to `SHA256SUMS.txt`.

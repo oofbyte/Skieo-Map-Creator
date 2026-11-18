@@ -9,7 +9,9 @@ import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-APP_DIR = Path(os.environ.get('LOCALAPPDATA') or Path.home() / 'AppData' / 'Local') / 'SkiEO Map Creator'
+from . import system
+
+APP_DIR = system.app_data() / 'SkiEO Map Creator'
 TILES = APP_DIR / 'cache' / 'tiles'
 DEMS = APP_DIR / 'cache' / 'dem'
 GAMEDATA = APP_DIR / 'gamedata'
@@ -52,11 +54,15 @@ def log_tail(lines=200):
 
 
 def retoc():
-    """retoc.exe runs from the app folder, so the Oodle library it downloads on first use is kept for next time."""
-    src, dst = resource('tools', 'retoc.exe'), TOOLS / 'retoc.exe'
+    """retoc runs from the app folder, so the Oodle library it downloads on first use is kept for next time (never
+    inside the macOS app bundle, which is signed)."""
+    src, dst = resource('tools', system.RETOC), TOOLS / system.RETOC
     if not dst.is_file() or dst.stat().st_size != src.stat().st_size:
-        tmp = dst.with_suffix('.tmp')
+        tmp = dst.with_name(dst.name + '.tmp')
+        dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, tmp)
+        if not system.WINDOWS:
+            os.chmod(tmp, 0o755)
         os.replace(tmp, dst)
     return dst
 

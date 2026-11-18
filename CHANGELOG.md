@@ -2,6 +2,13 @@
 
 Maps made with an older version show **Rebuild recommended** in My Maps: one click on Rebuild gives them the fixes.
 
+## Unreleased
+- **The Map Creator runs on macOS** (Macs with Apple silicon, like the game): download
+  **SkiEO-Map-Creator-macOS.zip**, unzip it and open **SkiEO Map Creator.app**. It isn't notarized by Apple: the
+  first time, open it from **System Settings > Privacy & Security > Open Anyway**. It finds the game in Steam, builds
+  the same maps and installs them into the game. Experimental mode is Windows only (Oof's Tree Limit is a Windows
+  mod), and on macOS a new version is downloaded from the release page instead of installing itself.
+
 ## v1.10.0
 - **Maps built from the ground up.** Every map used to be a copy of one of the game's own maps (Mad River Glen) with
   the terrain swapped, its forest learned from Mad River Glen's and Sugar Bowl's, and its starting save Sugar Bowl's

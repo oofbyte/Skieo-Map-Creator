@@ -18,6 +18,7 @@ from PyInstaller.archive.readers import CArchiveReader
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIRS = ('web', 'data', 'tools')
+MAC_ONLY = {'tools/retoc'}                    # retoc for macOS: shipped in the macOS app, not in the exe
 
 
 def source_path(name):
@@ -53,7 +54,7 @@ def main():
         elif car.extract(toc[n][0]) != p.read_bytes():
             bad.append('different from the source: ' + n)
     here = {p.relative_to(ROOT).as_posix() for d in DATA_DIRS for p in (ROOT / d).rglob('*') if p.is_file()}
-    for n in sorted(here - bundled):
+    for n in sorted(here - bundled - MAC_ONLY):
         bad.append('in the source but not in the exe: ' + n)
     print('bundled files checked: %d' % len(bundled))
 

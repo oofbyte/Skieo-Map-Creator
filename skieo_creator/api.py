@@ -7,7 +7,6 @@ import json
 import logging
 import math
 import os
-import platform
 import re
 import secrets
 import shutil
@@ -22,7 +21,7 @@ import numpy as np
 from PIL import Image
 
 from . import (APP_NAME, VERSION, biomes, builder, canopy, dem, gamedata, geo, install, net, oldmods, paths, resort, server,
-               trees, update)
+               system, trees, update)
 
 log = logging.getLogger(__name__)
 GAME_URL = 'steam://rungameid/' + install.APP_ID
@@ -198,7 +197,8 @@ class Api:
                                 trees_per_km2=trees.TREES_PER_KM2, tree_cap=trees.TREE_BUDGET,
                                 min_slope=trees.MIN_TREE_SLOPE,
                                 max_slope=trees.MAX_TREE_SLOPE, default_slope=trees.TREE_SLOPE,
-                                default_fade=trees.TREELINE_FADE, max_fade=trees.MAX_TREELINE_FADE))
+                                default_fade=trees.TREELINE_FADE, max_fade=trees.MAX_TREELINE_FADE,
+                                experimental=install.TREES_UNCAPPED))
 
     def _find_game(self):
         f = self._settings.get('game_folder')
@@ -220,8 +220,9 @@ class Api:
         install.restore_tree_limit(folder)
         running = install.game_running()
         if not running:
-            paths.sweep(Path(folder) / 'SkiResortSimulator', self._game.mods)   # work folders a crash left behind
-            self._remove_old_mods(folder)
+            paths.sweep(system.work_root(folder), self._game.mods)   # work folders a crash left behind
+            if system.WINDOWS:                          # the old Mod Library was never on macOS
+                self._remove_old_mods(folder)
             if not self._registry_checked and not self._busy():
                 self._registry_checked = True           # once a session: the map list of maps installed by an older
                 try:                                    # version (e.g. tutorial maps, see install.custom_entry)
@@ -271,7 +272,7 @@ class Api:
         if not r:
             return dict(game=self._game_status(), changed=False)
         p = r[0] if isinstance(r, (list, tuple)) else r
-        for cand in (p, os.path.dirname(p), os.path.dirname(os.path.dirname(p))):
+        for cand in system.game_candidates(p):
             if install.is_demo(cand):
                 raise UserError('That is the Ski-E-O demo. The Map Creator works with the full game (Ski-E-O! Ski '
                                 'Resort Tycoon) only.')
@@ -398,7 +399,7 @@ class Api:
 
     @_safe
     def play(self):
-        os.startfile(GAME_URL)
+        system.open_path(GAME_URL)
 
     @_safe
     def diagnostics(self):
@@ -407,7 +408,7 @@ class Api:
             st = self._game_status()
         except Exception as e:
             st = {'error': repr(e)}
-        head = ['%s %s' % (APP_NAME, VERSION), 'Windows %s' % platform.version(), 'game: %s' % json.dumps(st),
+        head = ['%s %s' % (APP_NAME, VERSION), system.os_version(), 'game: %s' % json.dumps(st),
                 'app folder: %s' % paths.APP_DIR, '']
         return dict(text='\n'.join(head) + paths.log_tail(250))
 
@@ -570,7 +571,8 @@ class Api:
         if not (BASE_MARGIN <= row <= builder.G - 1 - BASE_MARGIN and BASE_MARGIN <= col <= builder.G - 1 - BASE_MARGIN):
             raise UserError('Put the base area marker inside the square (not right at its edge).')
         treeline_m = float(params.get('treeline_m', biomes.default_treeline(biome, pv['lat'])))
-        experimental = bool(params.get('experimental'))         # more trees than TREE_BUDGET (the app warns first)
+        # more trees than TREE_BUDGET (the app warns first); not on macOS (Oof's Tree Limit is a Windows mod)
+        experimental = bool(params.get('experimental')) and install.TREES_UNCAPPED
         return dict(name=name, lat=pv['lat'], lon=pv['lon'], size_m=size_m, size_km=pv['size_km'], biome=biome,
                     treeline=float(np.clip(treeline_m, 0, 9000)), valley=float(np.clip(float(params.get('valley_m') or 0), 0, 9000)),
                     snow=float(np.clip(float(params.get('snow', 1.0)), 0.2, 3.0)), experimental=experimental,
