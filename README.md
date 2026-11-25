@@ -23,7 +23,9 @@ Fan-made; not affiliated with or endorsed by the developers of Ski-E-O!.
 ## What it does
 
 - **Any mountain on Earth.** Search a ski area, mountain or town, drag the square over it (3 to 20 km wide) and load
-  the real elevation: USGS 10 m data in the US, about 30 m everywhere else.
+  the real elevation: lidar terrain models of 1 to 10 m in the US and in most countries with ski areas (the Alps,
+  Scandinavia, Spain, the UK, Japan, New Zealand, Canada and more, see [Elevation data](#elevation-data)), about
+  30 m where no open model exists.
 - **Real trails and lifts.** Switch on **Real trails and lifts** and the ski area's runs and lifts from
   OpenStreetMap are built into the map, ready when you start a New Game, each run as wide as its real cut through
   the forest. Near the runs the forest follows the real tree cover, so open bowls stay open and glades stay wooded.
@@ -91,6 +93,29 @@ UE4SS the Map Creator's old Mod Library (versions 1.2 to 1.8) put into the game,
 closed, version 1.9 takes out what that library installed: its UE4SS (unless other mods use it), its mods, its lift and
 building packs and its merged build menu. Your maps stay.
 
+## Elevation data
+
+Each map takes the finest open terrain model that covers it: bare-earth models (no trees or buildings), mostly from
+airborne lidar. Where a square spans a border or a model has gaps, the next one fills in, matched to its level and
+blended in. The Terrain card names the sources a map uses; hover over it for their credits, which also go into a
+shared map's package.
+
+| Where | Source | Grid | Licence |
+|---|---|---|---|
+| United States | USGS 3D Elevation Program (3DEP) | 1 to 10 m | public domain |
+| Most of Europe, Scandinavia, Japan, New Zealand, Australia, Canada and more | [Mapterhorn](https://mapterhorn.com/attribution): the open national models of each country (swisstopo; IGN France and Spain; BEV and the Austrian states; the German states; Kartverket; Lantmäteriet; MML; the Italian regions and INGV; GUGiK; ÚGKK SR; ČÚZK; ARSO; the Environment Agency and the Scottish and Welsh Governments; GSI; LINZ; Geoscience Australia; NRCan and others) | 0.25 to 10 m | each country's own open licence (CC BY 4.0 and the like) |
+| British Columbia | LidarBC | 1 m | Open Government Licence – British Columbia |
+| Ontario | Ontario Digital Terrain Model (lidar-derived) | 0.5 m | Open Government Licence – Ontario |
+| New South Wales (Thredbo, Perisher) | NSW Spatial Services | 5 m | CC BY 4.0 |
+| The same areas, when Mapterhorn can't be reached | swisstopo swissALTI3D, IGN LiDAR HD, IGN España MDT05, BEV ALS-DGM, Kartverket, GSI, NRCan HRDEM, ČÚZK DMR 5G, Provincia di Bolzano, Regione Piemonte, Regione Lombardia, INGV TINITALY | 1 to 10 m | their own open licences |
+| Everywhere else | Terrain Tiles on AWS (Mapzen: SRTM and others) | about 30 m | open data |
+
+About 30 m is all there is so far for Bulgaria, Romania's Carpathians, the Balkans, Greece, Turkey, the Caucasus,
+Russia, Alberta's Rockies (Lake Louise, Sunshine), Victoria (Mt Buller, Hotham, Falls Creek), South America, Korea
+and China: their national models are not open, or need an account. A map keeps its heights, so **Rebuild** keeps its
+terrain as it was (and the saves on it right), whatever its sources change later; to get a finer model for a map made
+before, create it again.
+
 ## If something goes wrong
 
 - **The window stays empty (Windows).** The window is drawn by Microsoft Edge WebView2. When it can't start, the Map Creator
@@ -149,7 +174,8 @@ built or uploaded by hand. Three ways to check one:
 
 What the app connects to: GitHub at each start (this repository's latest release, for updates), map tiles
 (OpenStreetMap, OpenTopoMap, Esri World Imagery), place search (Photon, Nominatim), elevation data (USGS 3DEP, AWS
-Terrain Tiles) and, with **Real trails and lifts** on, the OpenStreetMap ski data (Overpass API) and tree canopy
+Terrain Tiles, Mapterhorn and, for the square you load, the national servers in [Elevation data](#elevation-data))
+and, with **Real trails and lifts** on, the OpenStreetMap ski data (Overpass API) and tree canopy
 heights (Meta / WRI, AWS Open Data). retoc downloads the Oodle compression library on first use. No accounts, no
 telemetry. It writes to `%LOCALAPPDATA%\SkiEO Map Creator` (macOS: `~/Library/Application Support/SkiEO Map
 Creator`) and the game's `Content\Paks\~mods` folder, inside the game's `Ski-E-O.app` on macOS (and, once,

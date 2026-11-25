@@ -33,12 +33,14 @@ LINKS = {
     'photon': 'https://photon.komoot.io/',
     'usgs': 'https://www.usgs.gov/3d-elevation-program',
     'terrain': 'https://registry.opendata.aws/terrain-tiles/',
+    'elevation': 'https://github.com/oofbyte/Skieo-Map-Creator#elevation-data',     # every source and its credit
     'chm': 'https://registry.opendata.aws/dataforgood-fb-forests/',
     'leaflet': 'https://leafletjs.com/',
 }
 PHOTON = 'https://photon.komoot.io/api/?limit=12&q='
 NOMINATIM = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&q='
 MIN_KM, MAX_KM = 3.0, 20.0                  # same 2017x2017 grid at every size: ~10 m between points at 20 km
+MAP_DEM = 'dem.npy'                         # a map's heights, in its folder (Rebuild builds on them again)
 PREFIX = 'mc_'
 ORDER_BASE = 1000
 BASE_MARGIN = 40                            # grid cells: the base area (ticket office + parking) stays this far inside
@@ -425,7 +427,8 @@ class Api:
 
     def _do_preview(self, job, lat, lon, size_km):
         size_m = size_km * 1000.0
-        d, src = dem.load(lat, lon, size_m, job.cancel, lambda f, t: job.progress(0.75 * f, t))
+        notes = []
+        d, src = dem.load(lat, lon, size_m, job.cancel, lambda f, t: job.progress(0.75 * f, t), notes=notes)
         job.progress(0.78, 'Analysing the terrain...')
         H, fr = builder.heights(d, size_m)
         slope = builder.slope_deg(H, fr)
@@ -440,14 +443,15 @@ class Api:
         step = 16
         grid = np.round(d[::step, ::step]).astype(int).tolist()
         relief = float(d.max() - d.min())
-        warnings = []
+        warnings = list(notes)
         if relief < 150:
             warnings.append('This area is very flat (%.0f m of relief). Pick an area with a hill or mountain.' % relief)
         if float((slope > 45).mean()) > 0.25:
             warnings.append('A lot of this area is cliffs steeper than 45 degrees. Skiers need gentler slopes.')
         self._preview = dict(lat=lat, lon=lon, size_km=size_km, dem=d, src=src, base=[float(blat), float(blon)])
-        return dict(lat=lat, lon=lon, size_km=size_km, source=dem.SOURCES[src]['name'], source_id=src,
-                    credit=dem.SOURCES[src]['credit'], peak_m=float(d.max()), base_m=float(d.min()),
+        src_name, src_credit = dem.describe(src)
+        return dict(lat=lat, lon=lon, size_km=size_km, source=src_name, source_id=src,
+                    credit=src_credit, peak_m=float(d.max()), base_m=float(d.min()),
                     relief_m=relief, mean_slope=float(slope.mean()), steep=float((slope > 35).mean()),
                     base=[float(blat), float(blon)], diorama=_data_url(dio, 'JPEG', 82), shade=_data_url(shade, 'PNG'),
                     grid=dict(step_m=fr.sp * step, n=len(grid), data=grid), warnings=warnings,
@@ -616,12 +620,16 @@ class Api:
         slug = spec['slug']
         out = paths.MAPS / slug
         out.mkdir(parents=True, exist_ok=True)
+        buf = io.BytesIO()                                  # the heights, kept with the map: Rebuild uses them again,
+        np.save(buf, np.asarray(d, np.float32))             # whatever its sources change since (saves stay right)
+        paths.atomic_write(out / MAP_DEM, buf.getvalue())
         res = builder.build(spec, d, self._gd, out, job.cancel, lambda f, t: job.progress(a + (b - a) * f, t))
         res['preview'].resize((640, 360), Image.LANCZOS).save(out / 'preview.jpg', quality=85)
         pkg_name = re.sub(r'[^A-Za-z0-9 _-]+', '', spec['name']).strip().replace(' ', '_') or slug
         man = dict(id=PREFIX + slug, name=spec['name'], version=int(spec.get('version', 1)), order=order,
                    files=res['files'], entry=res['entry'], game_build=self._game.build, format=builder.ENTRY_FORMAT,
-                   creator=dict(version=VERSION, lat=spec['lat'], lon=spec['lon'], size_m=spec['size_m'], biome=spec['biome']))
+                   creator=dict(version=VERSION, lat=spec['lat'], lon=spec['lon'], size_m=spec['size_m'], biome=spec['biome'],
+                                elevation=dem.describe(spec['source'])[1]))   # its data's credit travels with it
         pkg = out / (pkg_name + '.skimap')
         install.make_package(pkg, man, out)
         rec = dict(slug=slug, name=spec['name'], order=order, spec=spec, stats=res['stats'], package=pkg.name,
@@ -738,8 +746,16 @@ class Api:
         def work(job):
             self._prepare(job, 0.0, 0.05)
             s = dict(rec['spec'], version=int(rec.get('version', 1)) + 1)
-            d, _ = dem.load(s['lat'], s['lon'], s['size_m'], job.cancel, lambda f, t: job.progress(0.05 + 0.15 * f, t),
-                            prefer=s['source'])
+            d = None
+            try:                                            # the heights it was built with (if it was built since
+                                                            # they are kept: older maps load their sources again)
+                d = np.load(paths.MAPS / slug / MAP_DEM)
+                d = d if d.shape == (dem.G, dem.G) else None
+            except (OSError, ValueError):
+                pass
+            if d is None:
+                d, _ = dem.load(s['lat'], s['lon'], s['size_m'], job.cancel,
+                                lambda f, t: job.progress(0.05 + 0.15 * f, t), prefer=s['source'])
             new = self._build_and_package(job, s, d, 0.2, 0.9, order=rec.get('order', self._next_order()))
             new['version'] = s['version']
             paths.atomic_write(paths.MAPS / slug / 'map.json', json.dumps(new, indent=1).encode('utf-8'))

@@ -379,7 +379,7 @@ function showPreview(p) {
   $('photo').classList.add('ready');
   $('photoBadge').classList.remove('hidden');
   $('srcTag').textContent = p.source;
-  $('srcTag').title = p.credit;
+  $('srcTag').title = p.source + '\n' + p.credit;
   $('stats').innerHTML = [
     ['Peak', fmtElev(p.peak_m)], ['Base', fmtElev(p.base_m)], ['Vertical', fmtElev(p.relief_m)],
     ['Avg slope', Math.round(p.mean_slope) + '°'],

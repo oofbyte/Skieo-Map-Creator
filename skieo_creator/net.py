@@ -22,7 +22,9 @@ class Cancelled(Exception):
 
 
 class NetError(Exception):
-    pass
+    def __init__(self, msg, reason=None):
+        super().__init__(msg)
+        self.reason = reason or msg                  # what the server said, without the advice around it
 
 
 class CancelToken:
@@ -151,7 +153,37 @@ def get(url, timeout=60, retries=4, cancel=NEVER, accept=None, per_host=4, not_f
         log.warning('download failed (%s), attempt %d: %s', host, attempt + 1, last)
         if attempt < retries:
             cancel.sleep(min(2 ** attempt, 20))
-    raise NetError('Could not download from %s (%s). Check your internet connection and try again.' % (host, last))
+    raise NetError('Could not download from %s (%s). Check your internet connection and try again.' % (host, last),
+                   '%s: %s' % (host, last))
+
+
+def content_length(url, timeout=30, retries=2, cancel=NEVER, not_found_ok=False):
+    """the size in bytes of a file on a server (a HEAD request); NetError when the server doesn't say, None for a
+    404 when not_found_ok"""
+    last = None
+    for attempt in range(retries + 1):
+        cancel.check()
+        try:
+            req = urllib.request.Request(url, method='HEAD', headers={'User-Agent': USER_AGENT,
+                                                                      'Accept-Encoding': 'identity'})
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                n = r.headers.get('Content-Length')
+                if n is not None and n.isdigit():
+                    return int(n)
+                last = 'no file size'
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 404 and not_found_ok:
+                return None
+            last = 'the server answered %d %s' % (e.code, e.reason)
+            if e.code in (400, 401, 403, 404, 410):
+                break
+        except (urllib.error.URLError, socket.timeout, ConnectionError, OSError, http.client.HTTPException) as e:
+            last = str(getattr(e, 'reason', e) or type(e).__name__)
+        if attempt < retries:
+            cancel.sleep(min(2 ** attempt, 10))
+    host = urllib.parse.urlsplit(url).hostname
+    raise NetError('Could not reach %s (%s).' % (host, last), '%s: %s' % (host, last))
 
 
 class RateLimit:

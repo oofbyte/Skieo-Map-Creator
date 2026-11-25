@@ -5,9 +5,22 @@ For players, see the [README](../README.md).
 
 ## How it works
 
-1. **Elevation**: USGS 3DEP 1/3 arc-second (~10 m) inside the US, AWS Terrain Tiles (~30 m) elsewhere
-   (`dem.py`). It is resampled onto the game's 2017 x 2017 landscape grid on a local transverse Mercator projection
-   (`geo.py`).
+1. **Elevation** (`dem.py`, the sources in `dem_sources.py`): the finest open bare-earth model covering the square,
+   then the next ones for what it leaves (a border, gaps), each matched to the level of the finer one along the edge
+   and blended in over 24 grid steps (`dem.merge`). Order: USGS 3DEP in the US; LidarBC, Ontario's lidar DTM; then
+   Mapterhorn (tiles.mapterhorn.com: the open national models in one Terrarium tile set, whose zoom 13 and finer
+   tiles exist only where it has national data); then each country's own server (swisstopo, IGN France and Spain,
+   BEV, Kartverket, GSI, NRCan HRDEM, CUZK, NSW, Bolzano, Piemonte, Lombardia, INGV TINITALY) for what Mapterhorn
+   lacks or when it can't be reached; AWS Terrain Tiles (~30 m) for the rest. A source is a server that resamples
+   (WCS, WMS, ArcGIS ImageServer: `dem.Gridded`, `dem.ImageServer`), web Mercator tiles (`dem.XyzTiles`) or
+   GeoTIFF tiles read with range requests (`dem.Tiled`, `cog.py`: the overview the grid needs, only the tiles under
+   the square; LZW goes to Pillow's libtiff, Deflate and the predictors are decoded with numpy, so no imagecodecs).
+   Each raster is sampled from its own projection (`crs.py`: transverse Mercator, Lambert conic and azimuthal, polar
+   stereographic, LV95, Helmert datum shifts, forward only) onto the game's 2017 x 2017 landscape grid on a local
+   transverse Mercator projection (`geo.py`). A map keeps its heights (`maps/<slug>/dem.npy`), which Rebuild builds
+   on again, and the ids of the sources it was made from (`'ca_bc_lidar+mapterhorn'`), which a map made before the
+   heights were kept loads again (the old `'3dep'`, `'3dep2'` and `'terrarium'` give the terrain of 1.10 bit for bit);
+   `dem_sources.VERSION` goes up when sources change.
 2. **The template and the game's data**: every map is the Map Creator's own template (`data/map_template.zip`), made from
    scratch in the mod kit and laid out like the game's own maps: a level (landscape of 32 x 32 components, the
    environment settings, 64 snow shell pieces, the edge wall, the game mode and the shared level), a forest, map
@@ -179,7 +192,7 @@ python packaging/make_save_template.py <a .sav with a ticket office> <out>\SkiRe
 
 | Path | What |
 |---|---|
-| `skieo_creator/` | app: `main.py` (window), `api.py` (calls from the page), `system.py` (Windows / macOS differences), `builder.py`, `trees.py`, `shells.py`, `dem.py`, `install.py`, `oldmods.py`, `update.py` ... |
+| `skieo_creator/` | app: `main.py` (window), `api.py` (calls from the page), `system.py` (Windows / macOS differences), `builder.py`, `trees.py`, `shells.py`, `dem.py` and `dem_sources.py` (elevation), `crs.py` (map projections), `cog.py` (GeoTIFFs over range requests), `install.py`, `oldmods.py`, `update.py` ... |
 | `skieo_creator/engine/` | writers for the cooked map data (heightmaps, providers, bounds, collision, frame, headers, materials), the terrain material package (`terrain_material.py`), the check of the game's map layout (`stockcheck.py`) |
 | `web/` | the UI (HTML / CSS / JS) and vendored Leaflet + three.js |
 | `data/` | `map_template.zip`, the map template (see above); the cooked snow-shell template; `save_template.bin` and `resort_templates.bin`, blank save records (from `packaging/make_save_template.py` and `make_resort_templates.py`); the tree meshes, patterns and forest statistics |
@@ -190,6 +203,8 @@ python packaging/make_save_template.py <a .sav with a ticket office> <out>\SkiRe
 | `tests/test_resort.py` | self-check of the trail and lift import rules on made-up data |
 | `tests/test_trees.py` | self-check of the forest on a made-up mountain (no game, no downloads) |
 | `tests/test_dem.py` | self-check of reading where the USGS elevation image really is (its GeoTIFF tags) |
+| `tests/test_elevation.py` | self-check of the map projections against published coordinates, sampling a raster from its projection, merging sources, the COG reader and its decoders |
+| `tests/dem_live.py` | live check of each elevation source on a real ski area against Mapterhorn and Terrain Tiles: coverage, offset, and the shift that lines them up (0, 0 when in place); downloads data |
 | `tests/test_update.py` | self-check of the self-update (release lookup, checksums, swapping the exe) without the network |
 | `tests/test_install.py` | self-check of the map list entries (never a tutorial map, the once-only rebuild of older ones) |
 | `tests/test_map_package.py` | self-check that a map package holds only a map, with stand-in containers made from the game's files (skipped without the game) |

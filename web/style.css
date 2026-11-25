@@ -119,7 +119,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round
 .num { width: 26px; height: 26px; border-radius: 5px; background: var(--crimson); color: #fff; display: grid; place-items: center;
   font-family: 'Caprasimo', serif; font-size: 15px; flex: none; }
 .chip { background: var(--tag-bg); color: var(--tag-ink); border-radius: 4px; padding: 1px 8px; font-size: 11.5px;
-  text-transform: uppercase; letter-spacing: .5px; }
+  text-transform: uppercase; letter-spacing: .5px; max-width: 65%; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; }     /* several elevation sources: one line, the whole list in its tooltip */
 .chip:empty { display: none; }
 .note { color: var(--ink-soft); margin: 0 0 8px; font-size: 13.5px; }
 .meta { color: var(--ink-faint); font-size: 12.5px; margin: 1px 0 8px; font-variant-numeric: tabular-nums; }

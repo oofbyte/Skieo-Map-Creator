@@ -53,7 +53,8 @@ def main():
             bad.append('in the exe but not in the source: ' + n)
         elif car.extract(toc[n][0]) != p.read_bytes():
             bad.append('different from the source: ' + n)
-    here = {p.relative_to(ROOT).as_posix() for d in DATA_DIRS for p in (ROOT / d).rglob('*') if p.is_file()}
+    here = {p.relative_to(ROOT).as_posix() for d in DATA_DIRS for p in (ROOT / d).rglob('*') if p.is_file()
+            and not p.name.startswith('oo2core_')}   # the Oodle library retoc downloads next to itself (never shipped)
     for n in sorted(here - bundled - MAC_ONLY):
         bad.append('in the source but not in the exe: ' + n)
     print('bundled files checked: %d' % len(bundled))

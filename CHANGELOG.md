@@ -3,11 +3,26 @@
 Maps made with an older version show **Rebuild recommended** in My Maps: one click on Rebuild gives them the fixes.
 
 ## Unreleased
+- **Lidar terrain outside the US.** Maps outside the US used about 30 m elevation everywhere; now they take each
+  country's own open terrain model where there is one, 0.25 to 10 m and bare earth (no forest or buildings in the
+  ground): the Alps (Switzerland, France, Austria, Germany, Italy, Slovenia), Scandinavia, Spain and Portugal, the UK,
+  Czechia, Slovakia and Poland, Japan, New Zealand, Australia's NSW and Tasmania, and most of Canada, among others.
+  Ridges, gullies and the cuts of the runs come out as they are. Most of it comes through Mapterhorn, which gathers the
+  national models into one set of tiles; British Columbia (LidarBC), Ontario and New South Wales come from their own
+  servers, and the national servers (swisstopo, IGN, BEV, Kartverket, GSI, NRCan and others) step in if Mapterhorn
+  can't be reached. A square across a border or a gap in the data takes the next model there, levelled and blended in.
+  The Terrain card names the sources and their credits. The list, and the countries still on 30 m: README,
+  [Elevation data](README.md#elevation-data).
+- A map now keeps its heights, so Rebuild builds on exactly the same terrain however its sources change later (the
+  saves on it stay right). Maps made before keep their terrain on Rebuild too; create a map again for the finer
+  terrain.
 - **The Map Creator runs on macOS** (Macs with Apple silicon, like the game): download
   **SkiEO-Map-Creator-macOS.zip**, unzip it and open **SkiEO Map Creator.app**. It isn't notarized by Apple: the
   first time, open it from **System Settings > Privacy & Security > Open Anyway**. It finds the game in Steam, builds
   the same maps and installs them into the game. Experimental mode is Windows only (Oof's Tree Limit is a Windows
   mod), and on macOS a new version is downloaded from the release page instead of installing itself.
+  (After review: **Check for updates** on macOS opens the release page too, and the app sees the game running on
+  macOS, so it waits for it to close before installing a map.)
 
 ## v1.10.0
 - **Maps built from the ground up.** Every map used to be a copy of one of the game's own maps (Mad River Glen) with

@@ -29,5 +29,5 @@ assert (round(w, 6), round(n, 6)) == (-72.84, 43.625), (w, n)
 buf = io.BytesIO()
 tifffile.imwrite(buf, np.zeros((2, 2), np.float32))
 assert dem._georef(buf.getvalue()) is None
-assert dem.SOURCES['3dep2']['name'] == dem.SOURCES['3dep']['name']
+assert dem.describe('3dep2') == dem.describe('3dep')
 print('dem: all checks passed')

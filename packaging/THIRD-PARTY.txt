@@ -28,6 +28,24 @@ Map and elevation data (downloaded while you use the app)
 * Satellite imagery: Esri World Imagery (Esri, Maxar, Earthstar Geographics, and the GIS User Community)
 * Place search: Photon by komoot (OpenStreetMap data) and Nominatim (OpenStreetMap Foundation)
 * Elevation inside the USA: USGS 3D Elevation Program (public domain)
+* Elevation from national terrain models (the Terrain card names those of each map):
+  - Mapterhorn (https://mapterhorn.com), from the open national models of each country under their own licences
+    (CC BY 4.0 and the like), listed at https://mapterhorn.com/attribution
+  - LidarBC, GeoBC: contains information licensed under the Open Government Licence - British Columbia
+  - Ontario Digital Terrain Model (Lidar-Derived): contains information licensed under the Open Government Licence -
+    Ontario
+  - (c) State of New South Wales (Spatial Services, Department of Customer Service NSW), CC BY 4.0
+  - Federal Office of Topography swisstopo, swissALTI3D (Open Government Data)
+  - IGN, LiDAR HD MNT (Licence Ouverte Etalab 2.0)
+  - (c) Instituto Geografico Nacional de Espana, MDT05, CC BY 4.0 scne.es
+  - BEV - Bundesamt fuer Eich- und Vermessungswesen, ALS-DGM Hoehenraster 1 m (CC BY 4.0)
+  - (c) Kartverket (Norwegian Mapping Authority), CC BY 4.0
+  - Geospatial Information Authority of Japan (GSI) elevation tiles
+  - Natural Resources Canada, High Resolution Digital Elevation Model: Open Government Licence - Canada
+  - (c) CUZK, DMR 5G, CC BY 4.0
+  - Autonome Provinz Bozen - Suedtirol / Provincia autonoma di Bolzano (CC0)
+  - Regione Piemonte, DTM 5 m ICE 2009-2011 (CC BY 4.0); Regione Lombardia, DTM 5x5 (ed. 2015)
+  - Tarquini S. et al. (2023), TINITALY 1.1, INGV, CC BY 4.0, doi:10.13127/tinitaly/1.1
 * Elevation elsewhere: Terrain Tiles on AWS Open Data (Mapzen; sources include SRTM, GMTED2010, ETOPO1, 3DEP and others)
 * Tree canopy heights (to leave out glades and size the runs): Meta and World Resources Institute (WRI), Global Canopy Height Map v2,
   CC BY 4.0, on AWS Open Data -- https://registry.opendata.aws/dataforgood-fb-forests/
