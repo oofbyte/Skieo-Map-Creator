@@ -56,4 +56,14 @@ try:
         assert (g.mods / 'ZZZ_Theirs_P.pak').read_bytes() == b'theirs' and not g.installed()
 finally:
     install.is_valid_game, install.game_running = real
+
+# macOS: the running game is found by its command line (the kernel's process name is cut to 16 characters there)
+calls = []
+real_run, real_mac = install.system.subprocess.run, install.system.MAC
+install.system.subprocess.run = lambda argv, **kw: calls.append(argv) or type('R', (), {'returncode': 0})()
+install.system.MAC = True
+try:
+    assert install.game_running() and calls == [['pgrep', '-f', 'MacOS/skieogame-Mac-Shipping']], calls
+finally:
+    install.system.subprocess.run, install.system.MAC = real_run, real_mac
 print('install: all checks passed')

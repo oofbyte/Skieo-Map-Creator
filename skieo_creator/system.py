@@ -83,8 +83,11 @@ def work_root(game):
 
 
 def game_running_mac():
+    """by the game's command line: pgrep -x compares the kernel's process name, which macOS cuts to 16 characters
+    ('skieogame-Mac-Sh'), so the full name never matched; the command line holds the executable's whole path"""
     try:
-        return subprocess.run(['pgrep', '-x', MAC_PROCESS], capture_output=True, timeout=10).returncode == 0
+        return subprocess.run(['pgrep', '-f', 'MacOS/' + MAC_PROCESS], capture_output=True,
+                              timeout=10).returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False
 

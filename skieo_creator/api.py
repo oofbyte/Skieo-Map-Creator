@@ -804,14 +804,22 @@ class Api:
         if not update.is_newer(rel):
             return dict(state='latest', version=VERSION)
         self._update = rel
-        return dict(state='newer', version=rel['version'], current=VERSION, size_mb=max(1, rel['size'] >> 20),
-                    notes=update.notes(rel['notes'], 400))
+        return dict(state='newer' if update.IN_PLACE else 'page', version=rel['version'], current=VERSION,
+                    size_mb=max(1, rel['size'] >> 20), notes=update.notes(rel['notes'], 400), file=update.ASSET)
 
     @_safe
     def install_update(self):
         if not self._update:
             raise UserError('Look for updates first.')
+        if not update.IN_PLACE:                             # macOS: the player downloads the new app (open_update_page)
+            raise UserError('Download the new version from its release page.')
         return self._run('update', lambda job: self._do_update(job, self._update))
+
+    @_safe
+    def open_update_page(self):
+        """macOS: the newer release's page (this repository's only), where the player downloads the new app"""
+        page = (self._update or {}).get('page') or ''
+        webbrowser.open(page if page.startswith(update.PAGE_URL.rsplit('/', 1)[0] + '/') else update.PAGE_URL)
 
     def _do_update(self, job, rel):
         """download, check and swap in the new exe (update.py), then close the window: main() starts the new one"""

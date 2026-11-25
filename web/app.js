@@ -835,6 +835,12 @@ $('updBtn').onclick = async () => {
   if (!r.ok) return toast(r.error, true, 6000);
   if (r.state === 'source') return toast('Running from the source: update it with git.');
   if (r.state === 'latest') return toast('You have the newest version (v' + r.version + ').');
+  if (r.state === 'page') {                         // macOS: the app is not replaced in place
+    if (await confirmBox('v' + r.version + ' is out',
+      'You have v' + r.current + '.' + (r.notes ? '\n\n' + r.notes : '') + '\n\nOpen the download page? Download ' +
+      r.file + ' there, unzip it and put the new app in place of this one.', 'Open the page', false)) call('open_update_page');
+    return;
+  }
   if (!await confirmBox('Update to v' + r.version + '?',
     'You have v' + r.current + '.' + (r.notes ? '\n\n' + r.notes : '') + '\n\nThe new version (' + r.size_mb +
     ' MB) is downloaded from GitHub, checked, and the Map Creator restarts as it.', 'Update', false)) return;
