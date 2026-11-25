@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from skieo_creator import main as M  # noqa: E402
 
 M.LOAD_S = 0.6
+M.system.MAC = False                                 # the Windows behavior first (WebView2); macOS at the end
 M._probe = lambda url: 'answers (200)'
 shown, opened = [], []
 M.message = lambda text, flags=0: shown.append(text) or M.IDYES
@@ -81,4 +82,9 @@ assert not win.destroyed and not done and not shown
 f = M.InitFailure()
 f.emit(logging.LogRecord('pywebview', logging.ERROR, '', 0, 'some other error', None, None))
 assert f.text is None
+
+# macOS: WebKit is part of the system, so no second try and no repair: the reason, then the window closes
+M.system.MAC = True
+win, done, st = run(fail=FAIL)
+assert win.destroyed and not done and len(shown) == 1 and not opened and 'stays empty' in shown[0], shown
 print('ok')

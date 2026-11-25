@@ -40,4 +40,5 @@ if __name__ == '__main__':
     im = icon()
     im.save(HERE / 'icon.png')
     im.save(HERE / 'icon.ico', sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+    im.save(HERE / 'icon.icns')                             # the macOS app's
     print('icon written')

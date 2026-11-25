@@ -257,7 +257,7 @@ function renderGame(g) {
   if (!g || !g.found) {
     setStatus('bad', 'Game not found', 'Click to show the creator where Ski-E-O is installed');
     banner.className = 'banner';
-    banner.innerHTML = 'Ski-E-O! was not found on this PC. If it is installed, show the creator where.' +
+    banner.innerHTML = 'Ski-E-O! was not found on this computer. If it is installed, show the creator where.' +
       '<br><button class="gbtn green" id="locateBtn">Locate game folder</button>';
     $('locateBtn').onclick = locateGame;
   } else if (!g.ready) {
@@ -856,6 +856,7 @@ async function start() {
   $('slope').min = S.limits.min_slope; $('slope').max = S.limits.max_slope; $('slope').value = S.limits.default_slope;
   $('fade').max = S.limits.max_fade; $('fade').value = S.limits.default_fade;
   $('trees').min = S.limits.min_trees; $('trees').max = S.limits.max_trees;
+  if (S.limits.experimental === false) $('expBox').classList.add('hidden');    // macOS: the game takes 1.5M trees at most
   S.units = st.units === 'm' ? 'm' : 'ft';
   layers.topo = tileLayer('topo', 17);
   layers.osm = tileLayer('osm', 19);

@@ -9,10 +9,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from . import VERSION
+from . import VERSION, system
 
 log = logging.getLogger(__name__)
-USER_AGENT = 'SkiEO-Map-Creator/%s (community mod tool for the game Ski-E-O!; Windows)' % VERSION
+USER_AGENT = 'SkiEO-Map-Creator/%s (community mod tool for the game Ski-E-O!; %s)' % (VERSION, system.NAME)
 _host_slots = {}
 _host_lock = threading.Lock()
 

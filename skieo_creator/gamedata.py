@@ -21,7 +21,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from . import paths, trees
+from . import paths, system, trees
 from .engine import legacy_header as lh
 from .engine import stockcheck
 
@@ -132,7 +132,7 @@ class GameData:
             return self.info
         progress(0.05, 'Reading the game\'s map files (first start or game update)...')
         # work folder next to the game so hard links work (no copy of the multi-GB containers)
-        base = self.game_folder / 'SkiResortSimulator'
+        base = system.work_root(self.game_folder)
         try:
             work = Path(tempfile.mkdtemp(prefix='.skieo_creator_', dir=base))
         except OSError:

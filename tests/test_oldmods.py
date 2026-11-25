@@ -9,6 +9,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from skieo_creator import oldmods  # noqa: E402
 
+if sys.platform != 'win32':                   # the Mod Library was Windows only (UE4SS); the checks need Windows' file locks
+    print('old mods: skipped (Windows only)')
+    sys.exit(0)
+
 DLL, UE4SS, UTOC = b'the app dwmapi', b'the app UE4SS', b'the app R2 Six toc'
 oldmods.DWMAPI = {hashlib.sha256(DLL).hexdigest()}          # stand-ins for the files the app shipped
 oldmods.UE4SS_DLL = {hashlib.sha256(UE4SS).hexdigest()}

@@ -9,6 +9,7 @@ couple of minutes.
 [![Download](https://img.shields.io/github/v/release/oofbyte/Skieo-Map-Creator?label=download&color=2e7d32)](https://github.com/oofbyte/Skieo-Map-Creator/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/oofbyte/Skieo-Map-Creator/total?color=1565c0)](https://github.com/oofbyte/Skieo-Map-Creator/releases)
 [![Windows 10 and 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)](#download-and-play)
+[![macOS, Apple silicon](https://img.shields.io/badge/macOS-Apple%20silicon-555)](#download-and-play)
 [![MIT license](https://img.shields.io/github/license/oofbyte/Skieo-Map-Creator?color=555)](LICENSE)
 
 <img src="docs/images/whistler-skimap.jpg" alt="Whistler Blackcomb's real trails and lifts in the game's Ski Map" width="100%">
@@ -65,16 +66,21 @@ Fan-made; not affiliated with or endorsed by the developers of Ski-E-O!.
 
 ## Download and play
 
-1. Download **SkiEO-Map-Creator.exe** from
-   [Releases](https://github.com/oofbyte/Skieo-Map-Creator/releases/latest). It's one file, no install. Windows may
-   warn because the exe isn't code-signed: click **More info**, then **Run anyway**.
+1. Download it from [Releases](https://github.com/oofbyte/Skieo-Map-Creator/releases/latest):
+   - **Windows:** **SkiEO-Map-Creator.exe**. It's one file, no install. Windows may warn because the exe isn't
+     code-signed: click **More info**, then **Run anyway**.
+   - **macOS:** **SkiEO-Map-Creator-macOS.zip**. Unzip it and move **SkiEO Map Creator.app** to Applications. The app
+     isn't notarized by Apple, so the first time macOS refuses to open it: click **Done**, then open **System
+     Settings > Privacy & Security**, scroll down and click **Open Anyway** next to SkiEO Map Creator. After that it
+     opens normally.
 2. Search a mountain or ski area, drag the square over it and press **Load Terrain**.
 3. Look over the preview, name your resort, and switch on **Real trails and lifts** for a real ski area.
 4. Press **Create Map**. It takes a minute or two; if the game is open, the map is installed as soon as you close it.
 5. Start Ski-E-O!, choose **New Game** and pick your map in its region on the world map.
 
-Needs Windows 10 or 11, Ski-E-O! installed through Steam, and an internet connection. No game files are included:
-the Map Creator reads what it needs from your own copy of the game. What changed in each version:
+Needs Windows 10 or 11 or a Mac with Apple silicon (wherever the game runs), Ski-E-O! installed through Steam, and
+an internet connection. No game files are included: the Map Creator reads what it needs from your own copy of the
+game. What changed in each version:
 [CHANGELOG.md](CHANGELOG.md).
 
 ## Mods
@@ -87,7 +93,7 @@ building packs and its merged build menu. Your maps stay.
 
 ## If something goes wrong
 
-- **The window stays empty.** The window is drawn by Microsoft Edge WebView2. When it can't start, the Map Creator
+- **The window stays empty (Windows).** The window is drawn by Microsoft Edge WebView2. When it can't start, the Map Creator
   tries once more with a fresh browser profile and graphics acceleration off, then says what went wrong. Usually
   WebView2 is damaged (tools that remove Microsoft Edge often leave it half removed): repair it in Windows Settings >
   Apps > Microsoft Edge WebView2 Runtime > Modify, or install it from
@@ -98,7 +104,8 @@ building packs and its merged build menu. Your maps stay.
   however far away, so its frame rate goes with the number of trees: Sun Peaks at 14 km with 3.6 million ran at half
   the frame rate of a normal map. Maps built since 1.8.2 keep at most 1.5 million trees and canopies, about what the
   game's own biggest maps have (Whistler: 1.42 million): if yours shows **Rebuild recommended**, rebuild it. Maps
-  made in **Experimental mode** with more trees than that run slower by design.
+  made in **Experimental mode** with more trees than that run slower by design. (Experimental mode is Windows only:
+  Oof's Tree Limit is a Windows mod, so on macOS maps stay within the game's 1.5 million.)
 - **A big map has no trees.** The game drops every tree of a map with more than 1.5 million (made in Experimental
   mode, or built before 1.8.2). Turn on **Oof's Tree Limit** in Z's Mod Manager: it raises that limit while the game
   runs, without changing any game file, so game updates don't undo it. My Maps marks those maps **Needs Oof's Tree
@@ -108,14 +115,16 @@ building packs and its merged build menu. Your maps stay.
   back.)
 - **Anything else:** press **Copy diagnostics** at the bottom of the Map Creator and paste it into an
   [issue](https://github.com/oofbyte/Skieo-Map-Creator/issues). The log is
-  `%LOCALAPPDATA%\SkiEO Map Creator\logs\creator.log`.
+  `%LOCALAPPDATA%\SkiEO Map Creator\logs\creator.log` on Windows,
+  `~/Library/Application Support/SkiEO Map Creator/logs/creator.log` on macOS.
 
 ## Updates
 
 When it starts, the Map Creator looks for a newer release here and asks before updating. The new exe is downloaded
 from this page's releases, checked against the release's `SHA256SUMS.txt`, put in place of the old one and started.
 Keep the exe in a folder of your own (Desktop, Documents, Downloads) so it can replace itself. **Check for updates**
-at the bottom right looks again at any time. Set the environment variable `SKIEO_NO_UPDATE=1` to skip the check at
+at the bottom right looks again at any time. On macOS the app doesn't replace itself: when a new version is out, it
+asks, then opens the release page to download it. Set the environment variable `SKIEO_NO_UPDATE=1` to skip the check at
 start.
 
 ## Verify a download
@@ -124,9 +133,10 @@ Every release exe is built by GitHub Actions from the tagged source (`.github/wo
 built or uploaded by hand. Three ways to check one:
 
 1. **SHA-256**: compare with the hash on the release page and in its `SHA256SUMS.txt`:
-   `certutil -hashfile SkiEO-Map-Creator.exe SHA256`
+   `certutil -hashfile SkiEO-Map-Creator.exe SHA256` (Windows) or `shasum -a 256 SkiEO-Map-Creator-macOS.zip` (macOS)
 2. **Build attestation** (signed proof of which workflow run and commit built it), with the
    [GitHub CLI](https://cli.github.com): `gh attestation verify SkiEO-Map-Creator.exe --repo oofbyte/Skieo-Map-Creator`
+   (the same for `SkiEO-Map-Creator-macOS.zip`)
 3. **Compare with the source yourself**: check out the release tag, then
    ```
    py -3.12 -m pip install -r requirements.txt
@@ -141,7 +151,8 @@ What the app connects to: GitHub at each start (this repository's latest release
 (OpenStreetMap, OpenTopoMap, Esri World Imagery), place search (Photon, Nominatim), elevation data (USGS 3DEP, AWS
 Terrain Tiles) and, with **Real trails and lifts** on, the OpenStreetMap ski data (Overpass API) and tree canopy
 heights (Meta / WRI, AWS Open Data). retoc downloads the Oodle compression library on first use. No accounts, no
-telemetry. It writes to `%LOCALAPPDATA%\SkiEO Map Creator` and the game's `Content\Paks\~mods` folder (and, once,
+telemetry. It writes to `%LOCALAPPDATA%\SkiEO Map Creator` (macOS: `~/Library/Application Support/SkiEO Map
+Creator`) and the game's `Content\Paks\~mods` folder, inside the game's `Ski-E-O.app` on macOS (and, once,
 takes out what its old Mod Library put into the game, [above](#mods)); never to your saves.
 
 ## For developers
