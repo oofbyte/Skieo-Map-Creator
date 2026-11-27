@@ -85,24 +85,11 @@ def game_fingerprint(game_folder):
     return h.hexdigest()[:16]
 
 
-def _link_or_copy(src, dst):
-    try:
-        os.link(src, dst)
-    except OSError:
-        shutil.copyfile(src, dst)
-
-
 def _base_inputs(game_folder, work):
-    """the base containers in a folder of their own (retoc must not see ~mods); hard links when on the same drive"""
+    """the game's own containers, for retoc (system.game_containers)"""
     paks = Path(game_folder) / 'SkiResortSimulator' / 'Content' / 'Paks'
-    d = work / 'in'
-    d.mkdir()
-    n = 0
-    for f in paks.iterdir():
-        if f.suffix in ('.utoc', '.ucas') and (f.name.startswith('global.') or f.name.startswith('SkiResortSimulator-')):
-            _link_or_copy(f, d / f.name)
-            n += 1
-    if n < 4:
+    d = system.game_containers(paks, work)
+    if d is None:
         raise GameDataError('The game\'s data files were not found in %s.' % paks)
     return d
 

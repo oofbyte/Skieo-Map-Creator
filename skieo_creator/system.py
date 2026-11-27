@@ -4,11 +4,15 @@ The rest of the creator works with one "game folder", the one that holds SkiReso
 that is Steam's install folder of the game (steamapps/common/skieogame); on macOS it is inside the game's app bundle
 (steamapps/common/skieogame/Ski-E-O.app/Contents/UE), so every SkiResortSimulator/... path is the same on both.
 """
+import logging
 import os
 import platform
+import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 MAC = sys.platform == 'darwin'
 WINDOWS = os.name == 'nt'
@@ -80,6 +84,35 @@ def work_root(game):
     """where work folders next to the game go: on the game's drive, so its multi-GB containers can be hard-linked
     instead of copied, but never inside the macOS app bundle (it is signed)"""
     return install_dir(game) if MAC else Path(game) / 'SkiResortSimulator'
+
+
+def _game_container(f):
+    return f.name.startswith('global.') or f.name.startswith('SkiResortSimulator-')
+
+
+def game_containers(paks, work):
+    """The folder retoc reads the game's own containers (global, SkiResortSimulator-*) from, or None when they are not
+    there. retoc must not mount a mod's container too: its copy of a package would come out instead of the game's.
+    retoc 0.1.5 mounts only the .utoc files right in the folder it is given, not ~mods, so that is the game's Paks folder
+    itself, unless another container sits beside the game's. Then work/in with hard links to the game's, or copies
+    where the drive has no hard links (exFAT / FAT external drives: [WinError 1]): the 17 GB base container, minutes."""
+    paks = Path(paks)
+    files = [f for f in paks.iterdir() if f.suffix in ('.utoc', '.ucas', '.pak')]
+    own = [f for f in files if _game_container(f)]
+    io = [f for f in own if f.suffix != '.pak']
+    if len(io) < 4:
+        return None
+    if len(own) == len(files):
+        return paks
+    d = Path(work) / 'in'
+    d.mkdir(parents=True)
+    for f in io:
+        try:
+            os.link(f, d / f.name)
+        except OSError:
+            log.warning('no hard link for %s (%s): copying it', f.name, paks)
+            shutil.copyfile(f, d / f.name)
+    return d
 
 
 def game_running_mac():

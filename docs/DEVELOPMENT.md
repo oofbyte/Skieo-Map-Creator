@@ -29,7 +29,11 @@ For players, see the [README](../README.md).
    Mad River Glen for one thing only, the compiled terrain material that every game map carries (made from the
    material's node graph, which only the game's developer has); and that map's layout, which must still be the one the
    template was made for (`engine/stockcheck.py`), plus the tree species and biomes. It dry-runs every writer before
-   the first build. Nothing of the game's ships with the Map Creator, and no game map is copied.
+   the first build. Nothing of the game's ships with the Map Creator, and no game map is copied. retoc reads the game's
+   `Content/Paks` folder itself (`system.game_containers`): it mounts only the containers right in the folder, not
+   `~mods`, so no mod's copy of a package comes out. Only when another container sits next to the game's are the
+   game's set apart in a work folder: hard links, or copies on drives without them (exFAT: `[WinError 1]`, and the
+   17 GB base container took up to 20 minutes to copy).
 3. **Build** (`builder.py`): the template is filled in:
    - **Heights and scale:** landscape heights and all their mip levels (made the way Unreal makes them), edge-normal
      rings and grid scale (`engine/terrain_write.py`, `engine/provider_write.py`); component bounds and collision;
@@ -109,8 +113,8 @@ What differs between the platforms is in `skieo_creator/system.py`. On macOS:
 
 - The game folder is `<Steam>/steamapps/common/skieogame/Ski-E-O.app/Contents/UE`, so every
   `SkiResortSimulator/...` path is the same as on Windows (the paks are `SkiResortSimulator-Mac.*`). Maps go into
-  `Content/Paks/~mods` inside the game's app bundle; the game loads them from there. Work folders (hard links to the
-  game's containers) go next to the bundle, never inside it.
+  `Content/Paks/~mods` inside the game's app bundle; the game loads them from there. Work folders go next to the
+  bundle, never inside it.
 - `tools/retoc` is retoc v0.1.5's `aarch64-apple-darwin` release build, the same version as `tools/retoc.exe`. Its
   Oodle library (`liboo2coremac64.2.9.10.dylib`) downloads next to the copy in the app folder on first use.
 - Experimental mode is off and hidden (`install.TREES_UNCAPPED`): Oof's Tree Limit, which lets the game show more

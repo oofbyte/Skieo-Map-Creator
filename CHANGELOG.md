@@ -23,6 +23,12 @@ Maps made with an older version show **Rebuild recommended** in My Maps: one cli
   mod), and on macOS a new version is downloaded from the release page instead of installing itself.
   (After review: **Check for updates** on macOS opens the release page too, and the app sees the game running on
   macOS, so it waits for it to close before installing a map.)
+- **Ski-E-O on an external drive works.** Installing a map failed with "Could not read the game files ([WinError 1]
+  ...)" when the game was on a drive without hard links (most external SSDs, formatted exFAT), and "Reading the game's
+  map files" on the first start or after a game update took up to 20 minutes there, copying the game's 17 GB data file.
+  The Map Creator now reads the game's files where they are: that step takes a few seconds on any drive, and nothing is
+  copied. (It still sets the game's files apart, as before, when another mod's file sits right next to them in
+  Content/Paks instead of in ~mods.)
 
 ## v1.10.0
 - **Maps built from the ground up.** Every map used to be a copy of one of the game's own maps (Mad River Glen) with

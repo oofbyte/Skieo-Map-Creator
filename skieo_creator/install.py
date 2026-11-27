@@ -409,16 +409,14 @@ def extract_registry(paks, work):
 
 
 def extract_data_asset(paks, work, name, what, sub='Data'):
-    """(uasset, uexp, script objects) of Content/<sub>/<name> as the game itself has it (not a mod's copy).
-    retoc wants the base container and global.utoc in one folder without ~mods, so hard links are made next to them."""
-    src = work / 'in'
-    src.mkdir()
-    for f in Path(paks).iterdir():
-        if f.suffix in ('.utoc', '.ucas') and (f.name.startswith('global.') or f.name.startswith('SkiResortSimulator-')):
-            try:
-                os.link(f, src / f.name)
-            except OSError as e:
-                raise InstallError('Could not read the game files (%s).' % e)
+    """(uasset, uexp, script objects) of Content/<sub>/<name> as the game itself has it (not a mod's copy): retoc reads
+    the base container and global.utoc without ~mods (system.game_containers)."""
+    try:
+        src = system.game_containers(paks, work)
+    except OSError as e:
+        raise InstallError('Could not read the game files (%s).' % e)
+    if src is None:
+        raise InstallError('The game\'s data files were not found in %s.' % paks)
     out = work / 'base'
     run_retoc(['to-legacy', '--no-shaders', '--filter', name, str(src), str(out)])
     d = out / 'SkiResortSimulator' / 'Content' / sub

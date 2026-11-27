@@ -66,4 +66,35 @@ try:
     assert install.game_running() and calls == [['pgrep', '-f', 'MacOS/skieogame-Mac-Shipping']], calls
 finally:
     install.system.subprocess.run, install.system.MAC = real_run, real_mac
+
+# the game's containers for retoc: its Paks folder itself (retoc doesn't look into ~mods), without hard links or the
+# 17 GB copy that made "Reading the game's map files" take 20 minutes and installing fail on exFAT drives (WinError 1);
+# a work folder only when another container sits beside the game's
+with tempfile.TemporaryDirectory() as tmp:
+    paks = Path(tmp) / 'Paks'
+    (paks / '~mods').mkdir(parents=True)
+    for n in ('global.utoc', 'global.ucas', 'SkiResortSimulator-Windows.utoc', 'SkiResortSimulator-Windows.ucas',
+              'SkiResortSimulator-Windows.pak', '~mods/ZZZ_Registry_P.utoc', '~mods/ZZZ_Registry_P.ucas'):
+        (paks / n).write_bytes(n.encode())
+    assert install.system.game_containers(paks, Path(tmp) / 'w1') == paks and not (Path(tmp) / 'w1').exists()
+    (paks / 'Legacy_P.pak').write_bytes(b'mod')                   # a mod's legacy pak beside the game's: a work folder
+    w = install.system.game_containers(paks, Path(tmp) / 'w0')
+    assert w == Path(tmp) / 'w0' / 'in' and len(list(w.iterdir())) == 4, list(w.iterdir())
+    (paks / 'Legacy_P.pak').unlink()
+    (paks / 'Loose_P.utoc').write_bytes(b'mod')
+    (paks / 'Loose_P.ucas').write_bytes(b'mod')
+    real_link = install.system.os.link
+
+    def no_links(src, dst):
+        raise OSError(1, 'Incorrect function')                 # what exFAT answers
+    install.system.os.link = no_links
+    try:
+        d = install.system.game_containers(paks, Path(tmp) / 'w2')
+    finally:
+        install.system.os.link = real_link
+    assert d == Path(tmp) / 'w2' / 'in' and sorted(f.name for f in d.iterdir()) == [
+        'SkiResortSimulator-Windows.ucas', 'SkiResortSimulator-Windows.utoc', 'global.ucas', 'global.utoc'], list(d.iterdir())
+    assert (d / 'global.utoc').read_bytes() == b'global.utoc', 'copied'
+    (paks / 'global.ucas').unlink()
+    assert install.system.game_containers(paks, Path(tmp) / 'w3') is None
 print('install: all checks passed')
