@@ -104,7 +104,7 @@ shared map's package.
 |---|---|---|---|
 | United States | USGS 3D Elevation Program (3DEP) | 1 to 10 m | public domain |
 | Most of Europe, Scandinavia, Japan, New Zealand, Australia, Canada and more | [Mapterhorn](https://mapterhorn.com/attribution): the open national models of each country (swisstopo; IGN France and Spain; BEV and the Austrian states; the German states; Kartverket; Lantmäteriet; MML; the Italian regions and INGV; GUGiK; ÚGKK SR; ČÚZK; ARSO; the Environment Agency and the Scottish and Welsh Governments; GSI; LINZ; Geoscience Australia; NRCan and others) | 0.25 to 10 m | each country's own open licence (CC BY 4.0 and the like) |
-| British Columbia | LidarBC | 1 m | Open Government Licence – British Columbia |
+| British Columbia, where the province has flown it (most of Revelstoke, Red Mountain, Whitewater, Fernie, Silver Star, Apex, Kimberley) | LidarBC | 1 m | Open Government Licence – British Columbia |
 | Ontario | Ontario Digital Terrain Model (lidar-derived) | 0.5 m | Open Government Licence – Ontario |
 | New South Wales (Thredbo, Perisher) | NSW Spatial Services | 5 m | CC BY 4.0 |
 | The same areas, when Mapterhorn can't be reached | swisstopo swissALTI3D, IGN LiDAR HD, IGN España MDT05, BEV ALS-DGM, Kartverket, GSI, NRCan HRDEM, ČÚZK DMR 5G, Provincia di Bolzano, Regione Piemonte, Regione Lombardia, INGV TINITALY | 1 to 10 m | their own open licences |
@@ -112,9 +112,11 @@ shared map's package.
 
 About 30 m is all there is so far for Bulgaria, Romania's Carpathians, the Balkans, Greece, Turkey, the Caucasus,
 Russia, Alberta's Rockies (Lake Louise, Sunshine), Victoria (Mt Buller, Hotham, Falls Creek), South America, Korea
-and China: their national models are not open, or need an account. A map keeps its heights, so **Rebuild** keeps its
-terrain as it was (and the saves on it right), whatever its sources change later; to get a finer model for a map made
-before, create it again.
+and China: their national models are not open, or need an account. LidarBC hasn't flown the slopes of Whistler
+Blackcomb, Sun Peaks, Kicking Horse, Mt Washington or Manning Park, so they are on about 30 m too. Southern Quebec
+(Bromont, Owl's Head, Mont Sainte-Anne) lies inside the area USGS 3DEP covers and takes its 10 m first, as
+before. A map keeps its heights, so **Rebuild** keeps its terrain as it was (and the saves on it right), whatever its
+sources change later; to get a finer model for a map made before, create it again.
 
 ## If something goes wrong
 
