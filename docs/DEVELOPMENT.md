@@ -122,6 +122,9 @@ What differs between the platforms is in `skieo_creator/system.py`. On macOS:
 - The app is not replaced in place on update: a newer release with `SkiEO-Map-Creator-macOS.zip` is offered and its
   page opens.
 - The old Mod Library never shipped for macOS, so `oldmods.py` doesn't run there.
+- HTTPS trusts the root certificates of the Mac's keychains (`net.keychain_roots`, read with `security
+  find-certificate`): the app's OpenSSL has none of its own, since python.org's looks for a `cert.pem` inside its
+  Python.framework, which a player's Mac doesn't have.
 
 ## The map template
 

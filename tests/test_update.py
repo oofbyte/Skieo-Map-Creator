@@ -5,9 +5,11 @@ import io
 import threading
 import json
 import os
+import ssl
 import sys
 import tempfile
 import time
+import types
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -19,6 +21,22 @@ DL = U.DOWNLOADS + 'v9.9.9/'
 # ---- versions
 assert U._version('v1.7.3') == (1, 7, 3) and U._version('1.10.0') == (1, 10, 0) and U._version('v2.0.0') > (1, 99, 99)
 assert U._version('v1.8.0-beta') is None and U._version('') is None and U._version(None) is None
+
+# ---- the macOS app's root certificates come from the keychains; one it can't read leaves the others in
+ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+if sys.platform == 'darwin':
+    net.keychain_roots(ctx)
+    assert len(ctx.get_ca_certs()) > 50, len(ctx.get_ca_certs())
+else:
+    a, b = [ssl.DER_cert_to_PEM_cert(c) for c in ssl.create_default_context().get_ca_certs(binary_form=True)[:2]]
+    junk = '-----BEGIN CERTIFICATE-----\nbm90IGEgY2VydGlmaWNhdGU=\n-----END CERTIFICATE-----\n'
+    real_run = net.subprocess.run
+    net.subprocess.run = lambda *x, **kw: types.SimpleNamespace(stdout=a + junk + b + a)
+    try:
+        net.keychain_roots(ctx)
+    finally:
+        net.subprocess.run = real_run
+    assert len(ctx.get_ca_certs()) == 2, ctx.get_ca_certs()
 
 
 # ---- the release as GitHub's API describes it

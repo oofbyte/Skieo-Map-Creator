@@ -1,8 +1,10 @@
 """HTTP downloads with an identifying User-Agent, retries, per-host connection limits and cancellation."""
 import http.client
 import logging
+import re
 import socket
 import ssl
+import subprocess
 import threading
 import time
 import urllib.error
@@ -66,7 +68,37 @@ class _HTTPStatus(Exception):
 
 _pools = {}
 _pool_lock = threading.Lock()
-_ssl = ssl.create_default_context()
+KEYCHAINS = ('/Library/Keychains/System.keychain', '/System/Library/Keychains/SystemRootCertificates.keychain')
+
+
+def keychain_roots(ctx):
+    """trust the root certificates in the Mac's keychains (one by one: a certificate this OpenSSL can't read leaves
+    the others in)"""
+    try:
+        pem = subprocess.run(['/usr/bin/security', 'find-certificate', '-a', '-p', *KEYCHAINS], capture_output=True,
+                             text=True, errors='replace', timeout=10).stdout
+    except (OSError, subprocess.SubprocessError) as e:
+        log.warning('could not read the root certificates from the keychains: %s', e)
+        return
+    for cert in re.findall(r'-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----', pem, re.S):
+        try:
+            ctx.load_verify_locations(cadata=cert)
+        except (ssl.SSLError, ValueError):
+            pass
+
+
+def _tls():
+    """certificate checks against the system's roots: Python reads the Windows store itself, but the macOS app has no
+    root certificates of its own (python.org's OpenSSL looks for a cert.pem inside its Python.framework, which a
+    player's Mac doesn't have, and every download would fail), so there they come from the keychains"""
+    ctx = ssl.create_default_context()
+    if system.MAC and not ctx.get_ca_certs():
+        keychain_roots(ctx)
+        log.info('%d root certificates from the keychains', len(ctx.get_ca_certs()))
+    return ctx
+
+
+_ssl = _tls()
 
 
 def _pooled(parts, headers, timeout, cancel):
@@ -129,7 +161,8 @@ def get(url, timeout=60, retries=4, cancel=NEVER, accept=None, per_host=4, not_f
                 cancel.check()                    # may have waited for the slot a while
                 if direct:
                     return _pooled(parts, headers, timeout, cancel)
-                with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout) as r:
+                with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout,
+                                            context=_ssl) as r:
                     if byte_range and r.status != 206:
                         raise _HTTPStatus(r.status, 'instead of 206')
                     chunks = []
@@ -166,7 +199,7 @@ def content_length(url, timeout=30, retries=2, cancel=NEVER, not_found_ok=False)
         try:
             req = urllib.request.Request(url, method='HEAD', headers={'User-Agent': USER_AGENT,
                                                                       'Accept-Encoding': 'identity'})
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with urllib.request.urlopen(req, timeout=timeout, context=_ssl) as r:
                 n = r.headers.get('Content-Length')
                 if n is not None and n.isdigit():
                     return int(n)

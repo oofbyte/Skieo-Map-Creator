@@ -19,10 +19,9 @@ Maps made with an older version show **Rebuild recommended** in My Maps: one cli
 - **The Map Creator runs on macOS** (Macs with Apple silicon, like the game): download
   **SkiEO-Map-Creator-macOS.zip**, unzip it and open **SkiEO Map Creator.app**. It isn't notarized by Apple: the
   first time, open it from **System Settings > Privacy & Security > Open Anyway**. It finds the game in Steam, builds
-  the same maps and installs them into the game. Experimental mode is Windows only (Oof's Tree Limit is a Windows
-  mod), and on macOS a new version is downloaded from the release page instead of installing itself.
-  (After review: **Check for updates** on macOS opens the release page too, and the app sees the game running on
-  macOS, so it waits for it to close before installing a map.)
+  the same maps and installs them into the game, waiting for the game to close first. Experimental mode is Windows
+  only (Oof's Tree Limit is a Windows mod). A new version is downloaded from the release page instead of installing
+  itself: **Check for updates** opens that page.
 - **Ski-E-O on an external drive works.** Installing a map failed with "Could not read the game files ([WinError 1]
   ...)" when the game was on a drive without hard links (most external SSDs, formatted exFAT), and "Reading the game's
   map files" on the first start or after a game update took up to 20 minutes there, copying the game's 17 GB data file.
